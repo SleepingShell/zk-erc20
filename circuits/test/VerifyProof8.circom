@@ -6,14 +6,14 @@ include "../MerkleProof.circom";
 template VerifyProof(n) {
   signal input root;
   signal input leaf;
-  signal input pathElements[n];
+  signal input siblings[n];
   signal input pathIndices;
 
   component proof = MerkleProof(n);
   proof.leaf <== leaf;
   proof.pathIndices <== pathIndices;
   for (var i = 0; i < n; i++) {
-    proof.pathElements[i] <== pathElements[i];
+    proof.pathElements[i] <== siblings[i];
   }
 
   log("proo", proof.root);
@@ -21,4 +21,4 @@ template VerifyProof(n) {
   root === proof.root;
 }
 
-component main {public [root]} = VerifyProof(1);
+component main {public [root]} = VerifyProof(8);

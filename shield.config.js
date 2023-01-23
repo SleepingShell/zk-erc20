@@ -27,20 +27,20 @@ module.exports = {
       },
       */
       {
-        name: "MakeProof",
+        name: "VerifyProof1",
         protocol: "plonk",
-        circuit: "test/MakeProof.circom",
-        zkey: "MakeProof.zkey",
+        circuit: "test/VerifyProof1.circom",
+        zkey: "VerifyProof1.zkey",
         input: "input.json",
-        witness: "MakeProof/MakeProof.json",
+        witness: "VerifyProof1/VerifyProof1.json",
       },
       {
-        name: "VerifyProof",
+        name: "VerifyProof8",
         protocol: "plonk",
-        circuit: "test/VerifyProof.circom",
+        circuit: "test/VerifyProof8.circom",
         zkey: "VerifyProof.zkey",
         input: "input.json",
-        witness: "VerifyProof/VerifyProof.json",
+        witness: "VerifyProof8/VerifyProof8.json",
       },
       {
         name: "Transaction",
