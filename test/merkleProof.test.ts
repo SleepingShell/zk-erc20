@@ -1,47 +1,55 @@
 const snarkjs = require("snarkjs");
-const { readFileSync, writeFile } = require("fs");
+const { readFileSync } = require("fs");
 
-describe("Merkle Proof", async () => {
-  it("Create Merkle Proof", async () => {
-    const input = JSON.parse(readFileSync("test/merkleTree_0.input.json"));
+import { expect } from "chai";
+import { buildMerkleTree, MerkleTree } from "../util/merkleProof";
+
+import { randomBytes } from "crypto";
+import { BigNumber } from "ethers";
+
+const buildWC = require("../build/VerifyProof1/VerifyProof1_js/witness_calculator.js");
+
+describe.only("Merkle Proof(js+circom)", async () => {
+  it("1 levels", async () => {
+    const m = await buildMerkleTree(1);
+    m.addLeaves(["10", "20"]);
+    const root = m.getRoot()
+    const input = m.merkleProof(0);
+
+    const circuitCode = readFileSync("build/VerifyProof1/VerifyProof1_js/VerifyProof1.wasm");
+    await buildWC(circuitCode).then(async wc => {
+      await wc.calculateWitness(input, 1);
+    })
+
+    // This code shows how we can create a zkProof, but we only need to constrain the witness
+    /*
     const {proof, publicSignals} = await snarkjs.plonk.fullProve(
       input,
-      "build/MakeProof/MakeProof_js/MakeProof.wasm",
-      "build/MakeProof/MakeProof.zkey",
+      "build/VerifyProof1/VerifyProof1_js/VerifyProof1.wasm",
+      "build/VerifyProof1/VerifyProof1.zkey",
     );
-
-    //console.log(JSON.stringify(proof,null,1));
-    console.log(publicSignals)
-
     const vKey = JSON.parse(readFileSync("build/MakeProof/verification_key.json"));
-
     const verifyValid = await snarkjs.plonk.verify(vKey, publicSignals, proof);
     console.log(verifyValid);
+    */
+  });
+
+  it("8 levels", async () => {
+    const randomElement = () => BigNumber.from(randomBytes(32));
+
+    const numLeaves = 40;
+    const m = await buildMerkleTree(8);
+    const leaves: string[] = new Array();
+
+    for (let i = 0; i < numLeaves; i++) {
+      leaves.push(randomElement().toString());
+    }
+    m.addLeaves(leaves);
+    const input = m.merkleProof(22);
+
+    const circuitCode = readFileSync("build/VerifyProof8/VerifyProof8_js/VerifyProof8.wasm");
+    await buildWC(circuitCode).then(async wc => {
+      await wc.calculateWitness(input, 1);
+    })
   });
 });
-
-/*
-const wc  = require("../build/ProverTest/ProverTest_js/witness_calculator.js");
-const { readFileSync, writeFile } = require("fs");
-
-describe("Merkle Tree building and proving", async () => {
-
-  it('Build Merkle Tree', async () => {
-    
-  });
-
-  it('Verify Merkle Proof (1)', async () => {
-    const input = JSON.parse(readFileSync("test/merkleTree_1.input.json"));
-    
-    const buffer = readFileSync("build/ProverTest/ProverTest_js/ProverTest.wasm");
-    wc(buffer).then(async witnessCalculator => {
-	    const buff= await witnessCalculator.calculateWTNSBin(input,0);
-      //console.log(JSON.stringify(buff));
-      //writeFile(process.argv[4], buff, function(err) {
-      //  if (err) throw err;
-      //});
-    
-    });
-  });
-});
-*/
