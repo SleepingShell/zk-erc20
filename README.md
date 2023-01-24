@@ -25,7 +25,22 @@ If we want to spend an input UTXO (commitment) and generate a new output UTXO, w
 4. The new UTXO's commitment has been properly generated.
 
 We can prove 1,3,4 in a zero-knowledge proof. This will allow us to hide which input commitment is being spent, and who the new output commitment is destined for.
-2 is proven on-chain simply by checking if the nullifier exists in the hashmap.
+2 is proven on-chain simply by checking if the nullifier exists in the set of nullifiers.
+
+Ideally, there would be a set accumulator that allows us to prove nonmembership of the set for accumulators. This would allow us to prove the entire transaction in zero knowledge. At first, sparse merkle trees seems like an ideal solution for this. However, the problem of synchronity arises.
+
+Commitments must be proven to exist within the merkle tree of all commitments. Since this tree is append-only, the prover needs to only use a root that has *ever* been valid. However, for the nullifiers, we would always need to check against the most recent root, or else a malicious actor could double spend by verifying against a valid but old root that didn't include the nullifier. Therefore, if we were to prove nonmembership with a sparse merkle tree, senders would have to re-calculate their zk proof everytime a new transaction is confirmed before theirs.
+
+### Transaction data requirements
+In order for the system to properly function, there must be a data availability layer (DA) to communicate the various parts of the system. The required data, and their location, are as follows:
+
+| Data | Location |
+|------|----------|
+| Commitment merkle root | Contract Storage (Hashmap) |
+| Nullifier set | Contract Storage (Hashmap) |
+| Encrypted Commitment information | Event log |
+
+In order for a user to generate the nullifier for a received commitment, it must know the amount received and blinding. This information is communicated to the receiver by encrypting to their public key and transmitting the encrypted data along with the commitment event log.
 
 ### Deposit
 A user deposits by creating a transaction with 0-value commitments.
