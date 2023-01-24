@@ -17,6 +17,16 @@ A nullifier *nullifies* the commitment it is linked to so that it cannot be doub
 Commitments are stored in a cryptographic accumulator in which we can prove membership (merkle tree). The root of this merkle tree is stored on-chain.
 Nullifiers are stored in a hashmap on-chain to prevent double-spends. Theoretically, a cryptographic accumulator that provides nonmembership proofs (such as a sparse merkle tree) would also work. There is a tradeoff between zk prover time and gas cost of storage.
 
+## Accounts
+An account is composed of the following data:
+| Data | Type | Purpose |
+|------|------|---------|
+| Private Key | Random 32-byte scalar | Spend UTXOs |
+| Public Key | Hash(Private Key) | Receive UTXOs |
+| Encryption Key | See [eth-sig-utils](https://github.com/MetaMask/eth-sig-util/blob/31c4539/src/encryption.ts#L239), derived from Private Key | Decrypt UTXO data |
+
+
+
 ## Transactions
 If we want to spend an input UTXO (commitment) and generate a new output UTXO, we must prove the following:
 1. The input commitment exists in the set of all commitments.
