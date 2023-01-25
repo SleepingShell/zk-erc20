@@ -7,7 +7,7 @@ module.exports = {
     // (optional) Base path for files being output, defaults to `/build`
     outputBasePath: "/build",
     // (required) The final ptau file, relative to inputBasePath, from a Phase 1 ceremony
-    ptau: "powersOfTau28_hez_final_14.ptau",
+    ptau: "powersOfTau28_hez_final_16.ptau",
     // (required) Each object in this array refers to a separate circuit
     circuits: [
       /*
@@ -38,7 +38,7 @@ module.exports = {
         name: "VerifyProof8",
         protocol: "plonk",
         circuit: "test/VerifyProof8.circom",
-        zkey: "VerifyProof.zkey",
+        zkey: "VerifyProof 8.zkey",
         input: "input.json",
         witness: "VerifyProof8/VerifyProof8.json",
       },
