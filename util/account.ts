@@ -29,12 +29,14 @@ class Account {
   }
 
   // Attempts to decrypt a utxo, and if we can successfully do so, add it to the set of owned utxos
-  attemptDecryptAndAdd(commitment: BigNumber, data: EthEncryptedData, index: BigNumberish) {
+  attemptDecryptAndAdd(commitment: BigNumber, data: string, index: BigNumberish) {
     try {
-      const packedDecrypted = decrypt({encryptedData: data, privateKey: this.privateKey.toHexString().slice(2)});
+      const encryptedData = unpackEncryptedData(data);
+      const packedDecrypted = decrypt({encryptedData: encryptedData, privateKey: this.privateKey.toHexString().slice(2)});
       const { amount, blinding } = unpackCommitment(packedDecrypted);
       this.utxos.push(new Utxo(commitment, amount, blinding, index));
     } catch (error) {
+      console.log(error);
     }
   }
 
@@ -58,7 +60,7 @@ class Account {
   generateAndEncryptCommitment(
     amount: BigNumber,
     pubkey: BigNumber,
-    encryptKey: BigNumber
+    encryptKey: string
   ): {
     commitment: BigNumber
     blinding: BigNumber
@@ -67,7 +69,7 @@ class Account {
     const blinding = randomBytes32();
     const commitment = this.generateCommitment(amount, pubkey, blinding);
     const encryptedData = encrypt({
-      publicKey: pubkey.toString(),
+      publicKey: encryptKey.toString(),
       data: packCommitment(amount, blinding),
       version: VERSION
     });
@@ -80,15 +82,15 @@ class Account {
 }
 
 function packCommitment(amount: BigNumber, blinding: BigNumber): string {
-  const amountBuffer = Buffer.from(amount.toHexString().slice(2).padStart(32), 'hex');
-  const blindingBuffer = Buffer.from(blinding.toHexString().slice(2).padStart(32), 'hex');
+  const amountBuffer = Buffer.from(amount.toHexString().slice(2).padStart(32*2,'0'), 'hex');
+  const blindingBuffer = Buffer.from(blinding.toHexString().slice(2).padStart(32*2,'0'), 'hex');
   return Buffer.concat([amountBuffer, blindingBuffer]).toString('hex');
 }
 
 function unpackCommitment(data: string): {amount: BigNumber, blinding: BigNumber} {
-  const buf = Buffer.from(data)
-  const amount = BigNumber.from(buf.subarray(0, 32).toString('hex'));
-  const blinding = BigNumber.from(buf.subarray(32, 64).toString('hex'));
+  const buf = Buffer.from(data, 'hex')
+  const amount = BigNumber.from('0x' + buf.subarray(0, 32).toString('hex'));
+  const blinding = BigNumber.from('0x' + buf.subarray(32, 64).toString('hex'));
   return { amount, blinding }
 }
 
@@ -121,10 +123,6 @@ function unpackEncryptedData(data: string): EthEncryptedData {
   }
 }
 
-export function testEncrypt(pubkey: BigNumberish, data: string) {
-  return encrypt({publicKey: pubkey.toString(), data: data, version: VERSION});
-}
-
 class Utxo {
   commitment: BigNumberish
 
@@ -139,4 +137,11 @@ class Utxo {
     this.blinding = blinding;
     this.index = index;
   }
+}
+
+export const exportedForTesting = {
+  packCommitment,
+  unpackCommitment,
+  packEncryptedData,
+  unpackEncryptedData
 }
