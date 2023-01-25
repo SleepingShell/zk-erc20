@@ -36,7 +36,6 @@ class Account {
       const { amount, blinding } = unpackCommitment(packedDecrypted);
       this.utxos.push(new Utxo(commitment, amount, blinding, index));
     } catch (error) {
-      console.log(error);
     }
   }
 
@@ -111,10 +110,10 @@ function packEncryptedData(data: EthEncryptedData): string {
 }
 
 function unpackEncryptedData(data: string): EthEncryptedData {
-  const buffer = Buffer.from(data);
+  const buffer = Buffer.from(data, 'hex');
   const nonce = buffer.subarray(0, NONCE_LENGTH);
   const ephemPublicKey = buffer.subarray(NONCE_LENGTH, NONCE_LENGTH+32);
-  const ciphertext = buffer.subarray(NONCE_LENGTH+52);
+  const ciphertext = buffer.subarray(NONCE_LENGTH+32);
   return {
     version: VERSION,
     nonce: nonce.toString('base64'),

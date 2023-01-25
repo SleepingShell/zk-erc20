@@ -1,0 +1,9 @@
+node_modules
+refs/
+proof/
+cache/
+artifacts/
+typechain-types/
+build/*
+!build/*.ptau
+INTERNAL.md
