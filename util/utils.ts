@@ -5,7 +5,7 @@ import { HashFunction } from "@zk-kit/incremental-merkle-tree";
 import { buildPoseidon } from "circomlibjs";
 import { getCurveFromName } from "ffjavascript";
 
-export const randomBytes32 = () => BigNumber.from(randomBytes(32));
+export const randomBytes32 = () => BigNumber.from(randomBytes(32)).toBigInt();
 
 export async function getPoseidon(): Promise<HashFunction> {
   const bn128 = await getCurveFromName("bn128", true);
