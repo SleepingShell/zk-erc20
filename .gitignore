@@ -3,7 +3,7 @@ refs/
 proof/
 cache/
 artifacts/
-typechain-types/
+types/
 build/*
 !build/*.ptau
 INTERNAL.md
