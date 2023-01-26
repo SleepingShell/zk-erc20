@@ -2,10 +2,10 @@ import { BigNumber } from "ethers";
 import { readFileSync } from "fs";
 import { expect } from "chai";
 
-import { buildAccount } from "../util/account"
+import { buildAccount } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 
-const buildWC = require("../build/Deposit/Deposit_js/witness_calculator.js")
+const buildWC = require("../build/Deposit/Deposit_js/witness_calculator.js");
 
 describe("Deposits", async () => {
   const depositCircuit = readFileSync("build/Deposit/Deposit_js/Deposit.wasm");
@@ -28,17 +28,25 @@ describe("Deposits", async () => {
       outPubkeys: [pubkey1, pubkey2],
       outBlindings: [blinding1, blinding2],
       outCommitments: [commit1, commit2],
-      depositAmount: amount1.add(amount2)
-    }
+      depositAmount: amount1.add(amount2),
+    };
 
     const wc = await buildWC(depositCircuit);
     await wc.calculateWitness(input, 1);
 
-    await expect(wc.calculateWitness(Object.assign({}, input, {outAmounts: [amount2, amount1]}),1)).rejectedWith(Error);
-    await expect(wc.calculateWitness(Object.assign({}, input, {outPubkeys: [pubkey2, pubkey1]}),1)).rejectedWith(Error);
-    await expect(wc.calculateWitness(Object.assign({}, input, {outBlindings: [blinding1, 0]}),1)).rejectedWith(Error);
-    await expect(wc.calculateWitness(Object.assign({}, input, {outCommitments: [commit2, commit1]}),1)).rejectedWith(Error);
-    await expect(wc.calculateWitness(Object.assign({}, input, {depositAmount: 0}),1)).rejectedWith(Error);
-    await expect(wc.calculateWitness(Object.assign({}, input, {depositAmount: 1000}),1)).rejectedWith(Error);
+    await expect(wc.calculateWitness(Object.assign({}, input, { outAmounts: [amount2, amount1] }), 1)).rejectedWith(
+      Error
+    );
+    await expect(wc.calculateWitness(Object.assign({}, input, { outPubkeys: [pubkey2, pubkey1] }), 1)).rejectedWith(
+      Error
+    );
+    await expect(wc.calculateWitness(Object.assign({}, input, { outBlindings: [blinding1, 0] }), 1)).rejectedWith(
+      Error
+    );
+    await expect(wc.calculateWitness(Object.assign({}, input, { outCommitments: [commit2, commit1] }), 1)).rejectedWith(
+      Error
+    );
+    await expect(wc.calculateWitness(Object.assign({}, input, { depositAmount: 0 }), 1)).rejectedWith(Error);
+    await expect(wc.calculateWitness(Object.assign({}, input, { depositAmount: 1000 }), 1)).rejectedWith(Error);
   });
-})
+});
