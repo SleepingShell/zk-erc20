@@ -38,9 +38,16 @@ module.exports = {
         name: "VerifyProof8",
         protocol: "plonk",
         circuit: "test/VerifyProof8.circom",
-        zkey: "VerifyProof 8.zkey",
+        zkey: "VerifyProof8.zkey",
         input: "input.json",
         witness: "VerifyProof8/VerifyProof8.json",
+      },
+      {
+        name: "Deposit",
+        protocol: "plonk",
+        circuit: "Deposit.circom",
+        zkey: "Deposit.zkey",
+        witness: "Deposit/Deposit.json",
       },
       {
         name: "Transaction",
