@@ -1,0 +1,15 @@
+{
+  "printWidth": 120,
+  "semi": true,
+  "tabWidth": 2,
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 150,
+        "semi": true
+      }
+    }
+  ]
+}
