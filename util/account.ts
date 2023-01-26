@@ -24,7 +24,8 @@ class Account {
     this.privateKey = privateKey;
     this.hasher = hash;
     this.publicKey = hash([this.privateKey.toString()]);
-    this.encryptionKey = getEncryptionPublicKey(this.privateKey.toString(16));
+    // TODO: FIX
+    this.encryptionKey = getEncryptionPublicKey(this.privateKey.toString(16).padEnd(64, "0"));
     this.utxos = [];
   }
 
