@@ -66,7 +66,7 @@ A user deposits by creating a transaction with 0-value commitments.
 - [ ] Unify all tests + typescript files to use a single typed witness calculator variable, since they are all the same (or maybe make upstream shield change)
 - [ ] Clean up account and exported functions should only deal with addresses, not keys directly
 - [ ] Exposed functions should return objects ready to be digested by snarkjs prover
-- [ ] Convert BigNumbers to either string or BigInt (?)
+- [x] Convert BigNumbers to either string or BigInt (?)
 - [ ] Add address field to commitments to support multiple tokens
   - Circuit must either only allow 1 token to be transferred at a time, or need to constrain amount per token type instead of for the entire computation
 
