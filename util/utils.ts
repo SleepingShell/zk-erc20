@@ -14,3 +14,8 @@ export async function getPoseidon(): Promise<HashFunction> {
 
   return (data: any) => F.toObject(t(data));
 }
+
+export let hash: HashFunction;
+(async () => {
+  hash = await getPoseidon();
+})();

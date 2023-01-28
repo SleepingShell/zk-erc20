@@ -1,14 +1,14 @@
 import { HashFunction } from "@zk-kit/incremental-merkle-tree";
 import { decrypt, encrypt, EthEncryptedData, getEncryptionPublicKey } from "@metamask/eth-sig-util";
 
-import { randomBytes32, getPoseidon } from "./utils";
+import { randomBytes32, hash } from "./utils";
 
 const NONCE_LENGTH = 24;
 const PUBKEY_LENGTH = 32;
 const VERSION = "x25519-xsalsa20-poly1305";
 
 export async function buildAccount(): Promise<Account> {
-  return new Account(undefined, await getPoseidon());
+  return new Account(undefined, hash);
 }
 
 class Account {
@@ -28,6 +28,19 @@ class Account {
     this.utxos = [];
   }
 
+  static async fromAddress(address: string) {
+    if (address.length != 128) {
+      throw "Invalid address";
+    }
+
+    const [pubkey, encryptkey] = decodeAddress(address);
+    return Object.assign(new Account(undefined, hash), {
+      privateKey: null,
+      publicKey: pubkey,
+      encryptionKey: encryptkey,
+    });
+  }
+
   getEncodedAddress(): string {
     return this.publicKey
       .toString(16)
@@ -45,8 +58,8 @@ class Account {
     } catch (error) {}
   }
 
-  getNullifier(utxo: Utxo): BigInt {
-    return this.hasher([utxo.commitment, utxo.index, this.privateKey]);
+  getNullifier(commitment: BigInt, index: BigInt): BigInt {
+    return this.hasher([commitment, index, this.privateKey]);
   }
 
   generateCommitment(amount: BigInt, pubkey: BigInt, blinding: BigInt): BigInt {
@@ -145,7 +158,7 @@ function unpackEncryptedData(data: string): EthEncryptedData {
   };
 }
 
-class Utxo {
+export class Utxo {
   commitment: BigInt;
 
   amount: BigInt;
@@ -167,3 +180,14 @@ export const exportedForTesting = {
   packEncryptedData,
   unpackEncryptedData,
 };
+
+/*
+TODO
+
+1. Figure out how to get top level await so we can have a single instance of poseidon globally
+2. Move functions dealing with commitments, outside of the account class
+  - May want to have a separate commitment file for generating, encrypting and packing commitments
+3. The only usefulness of creating an 'Account' from an address is to encrypt to it and create commitments.
+    However, if we are going to keep the same functionality of only exposing paying to an address, then it is not needed.
+    Or we could have Account.generateCommitment(amount): {commitment, blinding, encrypted}
+  */
