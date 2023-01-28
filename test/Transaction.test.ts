@@ -1,4 +1,4 @@
-const snarkjs = require("snarkjs");
+import { plonk } from "snarkjs";
 
 import { ethers } from "hardhat";
 import { expect } from "chai";
@@ -62,9 +62,9 @@ describe("Transaction proving and verification", async () => {
       depositAmount: amount1 + amount2,
     };
 
-    const { proof, publicSignals } = await snarkjs.plonk.fullProve(input, depositCircuitPath, depositCircuitKeyPath);
+    const { proof, publicSignals } = await plonk.fullProve(input, depositCircuitPath, depositCircuitKeyPath);
 
-    const calldata: string = await snarkjs.plonk.exportSolidityCallData(proof, publicSignals);
+    const calldata: string = await plonk.exportSolidityCallData(proof, publicSignals);
     await expect(verifier.verifyProof(calldata.split(",")[0], publicSignals));
   });
 

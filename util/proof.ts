@@ -1,4 +1,4 @@
-const snarkjs = require("snarkjs");
+import { plonk } from "snarkjs";
 
 import { BigNumber } from "ethers";
 import { ZkERC20 } from "../types/contracts/ZkERC20";
@@ -25,8 +25,8 @@ export async function depositProof(
     depositAmount: depositAmount,
   };
 
-  const { proof, publicSignals } = await snarkjs.plonk.fullProve(input, depositCircuitPath, depositCircuitKeyPath);
-  const calldata: string = await snarkjs.plonk.exportSolidityCallData(proof, publicSignals);
+  const { proof, publicSignals } = await plonk.fullProve(input, depositCircuitPath, depositCircuitKeyPath);
+  const calldata: string = await plonk.exportSolidityCallData(proof, publicSignals);
   const proofCalldata = calldata.split(",")[0];
 
   const args: DepositArgsStruct = {
