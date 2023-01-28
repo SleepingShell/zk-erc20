@@ -19,11 +19,9 @@
     "types": "hardhat typechain",
     "node": "hardhat node",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts",
-    "prove:ProverTest": "npx snarkjs pkf circuits/input.json build/ProverTest/ProverTest_js/ProverTest.wasm build/ProverTest/ProverTest.zkey proof/ProverTest/proof.json proof/ProverTest/public.json",
-    "verify:ProverTest": "npx snarkjs pkv build/ProverTest/verification_key.json proof/ProverTest/public.json proof/ProverTest/proof.json",
-    "calldata:ProverTest": "npx snarkjs zkesc proof/ProverTest/public.json proof/ProverTest/proof.json",
     "prepare": "husky install",
-    "githook:precommit": "npx pretty-quick --staged"
+    "githook:precommit": "npx pretty-quick --staged",
+    "test-circuit": "hardhat test test/circuit*"
   },
   "dependencies": {
     "@metamask/eth-sig-util": "^5.0.2",

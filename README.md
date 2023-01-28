@@ -67,6 +67,8 @@ A user deposits by creating a transaction with 0-value commitments.
 - [ ] Clean up account and exported functions should only deal with addresses, not keys directly
 - [ ] Exposed functions should return objects ready to be digested by snarkjs prover
 - [x] Convert BigNumbers to either string or BigInt (?)
+- [ ] Move functions out of account class
+  - Shouldn't require having to build Poseidon multiple times
 - [ ] Add address field to commitments to support multiple tokens
   - Circuit must either only allow 1 token to be transferred at a time, or need to constrain amount per token type instead of for the entire computation
 
