@@ -3,7 +3,7 @@ import { plonk } from "snarkjs";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { DepositVerifier, ZkERC20 } from "../types";
-import { buildAccount, decodeAddress } from "../util/account";
+import { buildAccount } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof } from "../util/proof";
 
