@@ -16,8 +16,6 @@ template VerifyProof(n) {
     proof.pathElements[i] <== siblings[i];
   }
 
-  log("proo", proof.root);
-  log("root", root);
   root === proof.root;
 }
 
