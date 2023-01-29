@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { expect } from "chai";
 
-import { buildAccount } from "../util/account";
+import { Account, generateCommitment } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 
 const buildWC = require("../build/Deposit/Deposit_js/witness_calculator.js");
@@ -10,17 +10,17 @@ describe("Circuit: Deposit", async () => {
   const depositCircuit = readFileSync("build/Deposit/Deposit_js/Deposit.wasm");
 
   it("Deposit commitments are correct", async () => {
-    const a = await buildAccount();
+    const a = new Account();
 
     const amount1 = BigInt(500);
     const pubkey1 = a.publicKey;
     const blinding1 = randomBytes32();
-    const commit1 = a.generateCommitment(amount1, pubkey1, blinding1);
+    const commit1 = generateCommitment(amount1, pubkey1, blinding1);
 
     const amount2 = BigInt(0);
     const pubkey2 = BigInt(0);
     const blinding2 = randomBytes32();
-    const commit2 = a.generateCommitment(amount2, pubkey2, blinding2);
+    const commit2 = generateCommitment(amount2, pubkey2, blinding2);
 
     const input = {
       outAmounts: [amount1, amount2],

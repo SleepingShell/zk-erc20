@@ -1,34 +1,23 @@
-import { buildPoseidon } from "circomlibjs";
-import { getCurveFromName } from "ffjavascript";
 import { HashFunction, IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { BigNumber } from "ethers";
 
+import { getPoseidon } from "./utils";
+
 export async function buildMerkleTree(levels: number): Promise<MerkleTree> {
-  const bn128 = await getCurveFromName("bn128", true);
-  const F = bn128.Fr;
-  const t = await buildPoseidon();
-  const poseidon = (data: any) => F.toObject(t(data));
-
-  return new MerkleTree(levels, poseidon, F);
-}
-
-interface Curve {
-  toObject: (x :string) => bigint
+  return new MerkleTree(levels, await getPoseidon());
 }
 
 export class MerkleTree {
   levels: number;
   tree: IncrementalMerkleTree;
-  F: Curve;
 
-  constructor(levels: number, hash: HashFunction, F: Curve) {
+  constructor(levels: number, hash: HashFunction) {
     this.levels = levels;
-    this.F = F;
     this.tree = new IncrementalMerkleTree(hash, this.levels, 0, 2);
   }
 
   addLeaves(leaves: any[]) {
-   leaves.map((o: any) => this.tree.insert(o));
+    leaves.map((o: any) => this.tree.insert(o));
   }
 
   getRoot(): string {
@@ -46,8 +35,8 @@ export class MerkleTree {
       root: proof.root,
       leaf: proof.leaf,
       siblings: proof.siblings.map((o: string[]) => o[0]),
-      pathIndices: pathIndices.toString()
-    }
+      pathIndices: pathIndices.toString(),
+    };
     return proof2;
   }
 }
@@ -57,4 +46,4 @@ export type MerkleProof = {
   leaf: string;
   siblings: string[];
   pathIndices: string;
-}
+};

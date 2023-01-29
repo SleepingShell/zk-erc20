@@ -3,7 +3,7 @@ import { plonk } from "snarkjs";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { DepositVerifier, ZkERC20 } from "../types";
-import { buildAccount } from "../util/account";
+import { Account, payToAddress } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof } from "../util/proof";
 
@@ -44,15 +44,15 @@ describe("Transaction proving and verification", async () => {
   });
 
   it("Verifier contract", async () => {
-    const account1 = await buildAccount();
-    const account2 = await buildAccount();
-    const address1 = account1.getEncodedAddress();
-    const address2 = account2.getEncodedAddress();
+    const account1 = new Account();
+    const account2 = new Account();
+    const address1 = account1.getAddress();
+    const address2 = account2.getAddress();
     const amount1 = BigInt(100);
     const amount2 = BigInt(200);
 
-    const commit1args = account1.payToAddress(address1, amount1);
-    const commit2args = account1.payToAddress(address2, amount2);
+    const commit1args = payToAddress(address1, amount1);
+    const commit2args = payToAddress(address2, amount2);
 
     const input = {
       outAmounts: [amount1, amount2],
@@ -69,15 +69,15 @@ describe("Transaction proving and verification", async () => {
   });
 
   it("Deposit contract", async () => {
-    const account1 = await buildAccount();
-    const account2 = await buildAccount();
-    const address1 = account1.getEncodedAddress();
-    const address2 = account2.getEncodedAddress();
+    const account1 = new Account();
+    const account2 = new Account();
+    const address1 = account1.getAddress();
+    const address2 = account2.getAddress();
     const amount1 = BigInt(100);
     const amount2 = BigInt(200);
 
-    const commit1args = account1.payToAddress(address1, amount1);
-    const commit2args = account1.payToAddress(address2, amount2);
+    const commit1args = payToAddress(address1, amount1);
+    const commit2args = payToAddress(address2, amount2);
 
     const args = await depositProof(amount1 + amount2, [
       {

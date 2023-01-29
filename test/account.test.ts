@@ -1,6 +1,7 @@
 import { encrypt } from "@metamask/eth-sig-util";
-import { buildAccount, decodeAddress } from "../util/account";
+import { decodeAddress } from "../util/encoding";
 import { randomBytes32 } from "../util/utils";
+import { Account, payToAddress } from "../util/account";
 
 import { expect } from "chai";
 
@@ -20,10 +21,10 @@ describe("Account related actions", async () => {
   });
 
   it("Packing encrypted data functions", async () => {
-    const a = await buildAccount();
+    const a = new Account();
     const data = randomBytes32().toString();
 
-    const encrypted = encrypt({ publicKey: a.encryptionKey, data: data, version: "x25519-xsalsa20-poly1305" });
+    const encrypted = encrypt({ publicKey: a.encryptKey, data: data, version: "x25519-xsalsa20-poly1305" });
     const packed = packEncryptedData(encrypted);
     const unpacked = unpackEncryptedData(packed);
 
@@ -31,20 +32,18 @@ describe("Account related actions", async () => {
   });
 
   it("Address encoding/decoding", async () => {
-    const a = await buildAccount();
-    const addr = a.getEncodedAddress();
+    const a = new Account();
+    const addr = a.getAddress();
     const [pubKey, encryptKey] = decodeAddress(addr);
     expect(pubKey).eq(a.publicKey);
-    expect(encryptKey).eq(a.encryptionKey);
+    expect(encryptKey).eq(a.encryptKey);
   });
 
   it("Encrypt to account", async () => {
-    const a = await buildAccount();
-    const b = await buildAccount();
+    const a = new Account();
 
-    const generated = a.payToAddress(b.getEncodedAddress(), BigInt(500));
-    //const generated = a.generateAndEncryptCommitment(BigInt(500), b.publicKey, b.encryptionKey);
-    b.attemptDecryptAndAdd(generated.commitment, generated.encrypted, BigInt(0));
-    expect(b.utxos.length).eq(1);
+    const generated = payToAddress(a.getAddress(), BigInt(500));
+    a.attemptDecryptAndAdd(generated.commitment, generated.encrypted, BigInt(0));
+    expect(a.ownedUtxos.length).eq(1);
   });
 });
