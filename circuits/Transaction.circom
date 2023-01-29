@@ -16,11 +16,6 @@ template KeyPair() {
   hasher.inputs[0] <== privateKey;
   publicKey <== hasher.out;
 }
-/*
-TODO for expanding to multiple ins/outs:
-- Ensure non-duplicate input nullifiers
-- Ensure non-duplicate output commitments
-*/
 
 template Transaction(levels, nIns, nOuts) {
   // private signals
@@ -47,10 +42,22 @@ template Transaction(levels, nIns, nOuts) {
   component inNullifierHasher[nIns];
   component inTree[nIns];
   component checkRoot[nIns];
+  component dupNullifiers[nIns * (nIns - 1) / 2];
 
   var inTotal;
   var outTotal;
+
   // Verify there are no duplicate nullifiers
+  var dupIndex = 0;
+  for (var i = 0; i < nIns - 1; i++) {
+    for (var j = i+1; j < nIns; j++) {
+      dupNullifiers[dupIndex] = IsEqual();
+      dupNullifiers[dupIndex].in[0] <== inNullifier[i];
+      dupNullifiers[dupIndex].in[1] <== inNullifier[j];
+      dupNullifiers[dupIndex].out === 0;
+      dupIndex++;
+    }
+  }
 
   // Check input commitments + nullifiers are valid
   for (var i = 0; i < nIns; i++) {
@@ -96,5 +103,3 @@ template Transaction(levels, nIns, nOuts) {
 
   inTotal + withdrawAmount === outTotal;
 }
-
-component main {public [inRoot, outCommitment, inNullifier]}= Transaction(20,1,1);

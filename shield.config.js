@@ -7,7 +7,7 @@ module.exports = {
     // (optional) Base path for files being output, defaults to `/build`
     outputBasePath: "/build",
     // (required) The final ptau file, relative to inputBasePath, from a Phase 1 ceremony
-    ptau: "powersOfTau28_hez_final_16.ptau",
+    ptau: "powersOfTau28_hez_final_18.ptau",
     // (required) Each object in this array refers to a separate circuit
     circuits: [
       /*
@@ -31,7 +31,6 @@ module.exports = {
         protocol: "plonk",
         circuit: "test/VerifyProof1.circom",
         zkey: "VerifyProof1.zkey",
-        input: "input.json",
         witness: "VerifyProof1/VerifyProof1.json",
       },
       {
@@ -39,7 +38,6 @@ module.exports = {
         protocol: "plonk",
         circuit: "test/VerifyProof8.circom",
         zkey: "VerifyProof8.zkey",
-        input: "input.json",
         witness: "VerifyProof8/VerifyProof8.json",
       },
       {
@@ -50,12 +48,23 @@ module.exports = {
         witness: "Deposit/Deposit.json",
       },
       {
-        name: "Transaction",
+        name: "Transaction1x1",
         protocol: "plonk",
-        circuit: "Transaction.circom",
-        input: "input.json",
-        witness: "Transaction/Transaction.json"
-      }
+        circuit: "Transaction1x1.circom",
+        witness: "Transaction1x1/Transaction1x1.json",
+      },
+      {
+        name: "Transaction1x2",
+        protocol: "plonk",
+        circuit: "Transaction1x2.circom",
+        witness: "Transaction1x2/Transaction1x2.json",
+      },
+      {
+        name: "Transaction2x2",
+        protocol: "plonk",
+        circuit: "Transaction2x2.circom",
+        witness: "Transaction2x2/Transaction2x2.json",
+      },
     ],
   },
 };
