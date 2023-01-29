@@ -38,7 +38,7 @@ describe("Circuit: Transaction", async () => {
       inRoot: merkleProof.root,
       outCommitment: outCommitment,
       inNullifier: inNullifier,
-      externalAmount: 0,
+      withdrawAmount: 0,
     };
 
     const wc = await buildWC(transactionCircuit);

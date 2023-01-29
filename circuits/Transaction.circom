@@ -1,10 +1,10 @@
 pragma circom 2.1.0;
 
-include "./MerkleTree.circom";
+include "./MerkleProof.circom";
 
 /*
 commitment = hash(amount, pubKey, blinding)
-nullifier = hash(commitment, merklePath, privKey)
+nullifier = hash(commitment, merkle tree index, privKey)
 */
 
 // With the beauty of zk proofs, we just need to prove knowledge of the public key preimage!
@@ -22,64 +22,79 @@ TODO for expanding to multiple ins/outs:
 - Ensure non-duplicate output commitments
 */
 
-// 1 to 1 transaction
 template Transaction(levels, nIns, nOuts) {
   // private signals
-  signal input inCommitment;
-  signal input inAmount;
-  signal input inBlinding;
-  signal input inPathIndices;
-  signal input inPathElements[levels];
-  signal input inPrivateKey;
+  signal input inCommitment[nIns];
+  signal input inAmount[nIns];
+  signal input inBlinding[nIns];
+  signal input inPathIndices[nIns];
+  signal input inPathElements[nIns][levels];
+  signal input inPrivateKey[nIns];
 
-  signal input outAmount;
-  signal input outPubkey;
-  signal input outBlinding;
+  signal input outAmount[nOuts];
+  signal input outPubkey[nOuts];
+  signal input outBlinding[nOuts];
 
   // public signals
   signal input inRoot;
-  signal input outCommitment;
-  signal input inNullifier;
-  signal input externalAmount;
+  signal input outCommitment[nOuts];
+  signal input inNullifier[nIns];
+  signal input withdrawAmount;
 
-  // output signals
+  component inKeyPair[nIns];
+  component inCommitmentHasher[nIns];
+  component outCommitmentHasher[nOuts];
+  component inNullifierHasher[nIns];
+  component inTree[nIns];
+  component checkRoot[nIns];
 
-  component inKeypair = KeyPair();
-  inKeypair.privateKey <== inPrivateKey;
-  var inPublicKey = inKeypair.publicKey;
+  var inTotal;
+  var outTotal;
+  // Verify there are no duplicate nullifiers
 
-  component inCommitmentHasher = Poseidon(3);
-  inCommitmentHasher.inputs[0] <== inAmount;
-  inCommitmentHasher.inputs[1] <== inPublicKey;
-  inCommitmentHasher.inputs[2] <== inBlinding;
-  inCommitment === inCommitmentHasher.out;
+  // Check input commitments + nullifiers are valid
+  for (var i = 0; i < nIns; i++) {
+    inKeyPair[i] = KeyPair();
+    inKeyPair[i].privateKey <== inPrivateKey[i];
 
-  component inNullifierHasher = Poseidon(3);
-  inNullifierHasher.inputs[0] <== inCommitmentHasher.out;
-  inNullifierHasher.inputs[1] <== inPathIndices;
-  inNullifierHasher.inputs[2] <== inPrivateKey;
-  inNullifier === inNullifierHasher.out;
+    inCommitmentHasher[i] = Poseidon(3);
+    inCommitmentHasher[i].inputs[0] <== inAmount[i];
+    inCommitmentHasher[i].inputs[1] <== inKeyPair[i].publicKey;
+    inCommitmentHasher[i].inputs[2] <== inBlinding[i];
+    inCommitment[i] === inCommitmentHasher[i].out;
 
-  component inTree = MerkleProof(levels);
-  inTree.leaf <== inCommitment;
-  inTree.pathIndices <== inPathIndices;
-  for (var i = 0; i < levels; i++) {
-    inTree.pathElements[i] <== inPathElements[i];
+    inNullifierHasher[i] = Poseidon(3);
+    inNullifierHasher[i].inputs[0] <== inCommitmentHasher[i].out;
+    inNullifierHasher[i].inputs[1] <== inPathIndices[i];
+    inNullifierHasher[i].inputs[2] <== inPrivateKey[i];
+    inNullifier[i] === inNullifierHasher[i].out;
+
+    inTree[i] = MerkleProof(levels);
+    inTree[i].leaf <== inCommitment[i];
+    inTree[i].pathIndices <== inPathIndices[i];
+    for (var j = 0; j < levels; j++) {
+      inTree[i].pathElements[j] <== inPathElements[i][j];
+    }
+
+    checkRoot[i] = ForceEqualIfEnabled();
+    checkRoot[i].in[0] <== inRoot;
+    checkRoot[i].in[1] <== inTree[i].root;
+    checkRoot[i].enabled <== inAmount[i];
+
+    inTotal += inAmount[i];
   }
 
-  component checkRoot = ForceEqualIfEnabled();
-  checkRoot.in[0] <== inRoot;
-  checkRoot.in[1] <== inTree.root;
-  checkRoot.enabled <== inAmount; // Checks on any non-zero
-  
-  component outCommitmentHasher = Poseidon(3);
-  outCommitmentHasher.inputs[0] <== outAmount;
-  outCommitmentHasher.inputs[1] <== outPubkey;
-  outCommitmentHasher.inputs[2] <== outBlinding;
+  for (var i = 0; i < nOuts; i++) {
+    outCommitmentHasher[i] = Poseidon(3);
+    outCommitmentHasher[i].inputs[0] <== outAmount[i];
+    outCommitmentHasher[i].inputs[1] <== outPubkey[i];
+    outCommitmentHasher[i].inputs[2] <== outBlinding[i];
 
-  outCommitment === outCommitmentHasher.out;
-  
-  inAmount + externalAmount === outAmount;
+    outCommitment[i] === outCommitmentHasher[i].out;
+    outTotal += outAmount[i];
+  }
+
+  inTotal + withdrawAmount === outTotal;
 }
 
 component main {public [inRoot, outCommitment, inNullifier]}= Transaction(20,1,1);
