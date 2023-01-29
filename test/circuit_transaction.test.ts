@@ -5,11 +5,11 @@ import { Account, payToAddress, Utxo } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 import { buildMerkleTree } from "../util/merkleProof";
 
-const buildWC = require("../build/Transaction/Transaction_js/witness_calculator.js");
+const buildWC = require("../build/Transaction1x1/Transaction1x1_js/witness_calculator.js");
 //import { builder as buildWC } from "../build/Transaction/Transaction_js/witness_calculator.js";
 
 describe("Circuit: Transaction", async () => {
-  const transactionCircuit = readFileSync("build/Transaction/Transaction_js/Transaction.wasm");
+  const transactionCircuit = readFileSync("build/Transaction1x1/Transaction1x1_js/Transaction1x1.wasm");
 
   it("Transaction verification", async () => {
     const tree = await buildMerkleTree(20);
@@ -24,20 +24,20 @@ describe("Circuit: Transaction", async () => {
     const merkleProof = tree.merkleProof(0);
 
     const input = {
-      inCommitment: inCommitment,
-      inAmount: amount,
-      inBlinding: inBlinding,
-      inPathIndices: merkleProof.pathIndices,
-      inPathElements: merkleProof.siblings,
-      inPrivateKey: a.privateKey,
+      inCommitment: [inCommitment],
+      inAmount: [amount],
+      inBlinding: [inBlinding],
+      inPathIndices: [merkleProof.pathIndices],
+      inPathElements: [merkleProof.siblings],
+      inPrivateKey: [a.privateKey],
 
-      outAmount: amount,
-      outPubkey: b.publicKey,
-      outBlinding: outBlinding,
+      outAmount: [amount],
+      outPubkey: [b.publicKey],
+      outBlinding: [outBlinding],
 
       inRoot: merkleProof.root,
-      outCommitment: outCommitment,
-      inNullifier: inNullifier,
+      outCommitment: [outCommitment],
+      inNullifier: [inNullifier],
       withdrawAmount: 0,
     };
 
