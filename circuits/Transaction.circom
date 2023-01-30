@@ -32,9 +32,9 @@ template Transaction(levels, nIns, nOuts) {
 
   // public signals
   signal input inRoot;
-  signal input outCommitment[nOuts];
-  signal input inNullifier[nIns];
   signal input withdrawAmount;
+  signal input inNullifier[nIns];
+  signal input outCommitment[nOuts];
 
   component inKeyPair[nIns];
   component inCommitmentHasher[nIns];
@@ -47,7 +47,7 @@ template Transaction(levels, nIns, nOuts) {
   var inTotal;
   var outTotal;
   var dupIndex = 0;
-  
+
   // Check input commitments + nullifiers are valid
   for (var i = 0; i < nIns; i++) {
     inKeyPair[i] = KeyPair();
@@ -80,6 +80,8 @@ template Transaction(levels, nIns, nOuts) {
     inTotal += inAmount[i];
 
     // Verify there are no duplicate nullifiers
+    // TODO: If the contract checks nullifiers aren't spent (and progressively sets them while checking), 
+    //       can we remove this check?
     for (var j = i+1; j < nIns; j++) {
       dupNullifiers[dupIndex] = IsEqual();
       dupNullifiers[dupIndex].in[0] <== inNullifier[i];
