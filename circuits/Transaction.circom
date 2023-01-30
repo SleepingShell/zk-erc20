@@ -46,19 +46,8 @@ template Transaction(levels, nIns, nOuts) {
 
   var inTotal;
   var outTotal;
-
-  // Verify there are no duplicate nullifiers
   var dupIndex = 0;
-  for (var i = 0; i < nIns - 1; i++) {
-    for (var j = i+1; j < nIns; j++) {
-      dupNullifiers[dupIndex] = IsEqual();
-      dupNullifiers[dupIndex].in[0] <== inNullifier[i];
-      dupNullifiers[dupIndex].in[1] <== inNullifier[j];
-      dupNullifiers[dupIndex].out === 0;
-      dupIndex++;
-    }
-  }
-
+  
   // Check input commitments + nullifiers are valid
   for (var i = 0; i < nIns; i++) {
     inKeyPair[i] = KeyPair();
@@ -89,6 +78,15 @@ template Transaction(levels, nIns, nOuts) {
     checkRoot[i].enabled <== inAmount[i];
 
     inTotal += inAmount[i];
+
+    // Verify there are no duplicate nullifiers
+    for (var j = i+1; j < nIns; j++) {
+      dupNullifiers[dupIndex] = IsEqual();
+      dupNullifiers[dupIndex].in[0] <== inNullifier[i];
+      dupNullifiers[dupIndex].in[1] <== inNullifier[j];
+      dupNullifiers[dupIndex].out === 0;
+      dupIndex++;
+    }
   }
 
   for (var i = 0; i < nOuts; i++) {
