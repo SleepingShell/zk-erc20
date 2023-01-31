@@ -15,8 +15,8 @@ import {
 const VERSION = "x25519-xsalsa20-poly1305";
 
 export class Account {
-  privateKey: BigInt;
-  publicKey: BigInt;
+  privateKey: bigint;
+  publicKey: bigint;
   encryptKey: string;
 
   ownedUtxos: Utxo[];
@@ -47,7 +47,7 @@ export class Account {
   }
 
   // Attempts to decrypt a utxo, and if we can successfully do so, add it to the set of owned utxos
-  attemptDecryptAndAdd(commitment: BigInt, data: string, index: BigInt) {
+  attemptDecryptAndAdd(commitment: bigint, data: string, index: bigint) {
     try {
       const encryptedData = unpackEncryptedData(data);
       const packedDecrypted = decrypt({ encryptedData: encryptedData, privateKey: this.privateKey.toString(16) });
@@ -56,7 +56,7 @@ export class Account {
     } catch (error) {}
   }
 
-  getNullifier(commitment: BigInt, index: BigInt): BigInt {
+  getNullifier(commitment: bigint, index: bigint): bigint {
     return hash([commitment, index, this.privateKey]);
   }
 
@@ -70,9 +70,9 @@ export class Account {
    *
    * @returns The commitment, blinding and encrypted data
    */
-  generateAndEncryptCommitment(amount: BigInt): {
-    commitment: BigInt;
-    blinding: BigInt;
+  generateAndEncryptCommitment(amount: bigint): {
+    commitment: bigint;
+    blinding: bigint;
     encrypted: string;
   } {
     const blinding = randomBytes32();
@@ -90,30 +90,30 @@ export class Account {
   }
 }
 
-export function generateCommitment(amount: BigInt, pubkey: BigInt, blinding: BigInt): BigInt {
+export function generateCommitment(amount: bigint, pubkey: bigint, blinding: bigint): bigint {
   return hash([amount, pubkey, blinding]);
 }
 
 export function payToAddress(
   address: string,
-  amount: BigInt
+  amount: bigint
 ): {
-  commitment: BigInt;
-  blinding: BigInt;
+  commitment: bigint;
+  blinding: bigint;
   encrypted: string;
 } {
   return Account.fromAddress(address).generateAndEncryptCommitment(amount);
 }
 
 export class Utxo {
-  commitment: BigInt;
+  commitment: bigint;
 
-  amount: BigInt;
-  blinding: BigInt;
+  amount: bigint;
+  blinding: bigint;
 
-  index: BigInt;
+  index: bigint;
 
-  constructor(commitment: BigInt, amount: BigInt, blinding: BigInt, index: BigInt) {
+  constructor(commitment: bigint, amount: bigint, blinding: bigint, index: bigint) {
     this.commitment = commitment;
     this.amount = amount;
     this.blinding = blinding;

@@ -4,27 +4,27 @@ const NONCE_LENGTH = 24;
 const PUBKEY_LENGTH = 32;
 const VERSION = "x25519-xsalsa20-poly1305";
 
-export function encodeAddress(publicKey: BigInt, encryptKey: string): string {
+export function encodeAddress(publicKey: bigint, encryptKey: string): string {
   return publicKey
     .toString(16)
     .padStart(PUBKEY_LENGTH * 2, "0")
     .concat(Buffer.from(encryptKey, "base64").toString("hex"));
 }
 
-export function decodeAddress(address: string): [BigInt, string] {
+export function decodeAddress(address: string): [bigint, string] {
   const pubkey = BigInt("0x" + address.slice(0, PUBKEY_LENGTH * 2));
   const encryptKey = Buffer.from(address.slice(PUBKEY_LENGTH * 2), "hex").toString("base64");
 
   return [pubkey, encryptKey];
 }
 
-export function packCommitment(amount: BigInt, blinding: BigInt): string {
+export function packCommitment(amount: bigint, blinding: bigint): string {
   const amountBuffer = Buffer.from(amount.toString(16).padStart(32 * 2, "0"), "hex");
   const blindingBuffer = Buffer.from(blinding.toString(16).padStart(32 * 2, "0"), "hex");
   return Buffer.concat([amountBuffer, blindingBuffer]).toString("hex");
 }
 
-export function unpackCommitment(data: string): { amount: BigInt; blinding: BigInt } {
+export function unpackCommitment(data: string): { amount: bigint; blinding: bigint } {
   const buf = Buffer.from(data, "hex");
   const amount = BigInt("0x" + buf.subarray(0, 32).toString("hex"));
   const blinding = BigInt("0x" + buf.subarray(32, 64).toString("hex"));

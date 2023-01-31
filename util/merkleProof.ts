@@ -20,7 +20,7 @@ export class MerkleTree {
     leaves.map((o: any) => this.tree.insert(o));
   }
 
-  getRoot(): BigInt {
+  getRoot(): bigint {
     return this.tree.root;
   }
 
@@ -34,7 +34,7 @@ export class MerkleTree {
     const proof2: MerkleProof = {
       root: proof.root,
       leaf: proof.leaf,
-      siblings: proof.siblings.map((o: BigInt[]) => o[0]),
+      siblings: proof.siblings.map((o: bigint[]) => o[0]),
       pathIndices: pathIndices,
     };
     return proof2;
@@ -42,8 +42,8 @@ export class MerkleTree {
 }
 
 export type MerkleProof = {
-  root: BigInt;
-  leaf: BigInt;
-  siblings: BigInt[];
-  pathIndices: BigInt;
+  root: bigint;
+  leaf: bigint;
+  siblings: bigint[];
+  pathIndices: bigint;
 };
