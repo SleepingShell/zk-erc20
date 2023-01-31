@@ -1,10 +1,10 @@
 import { HashFunction, IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { BigNumber } from "ethers";
 
-import { getPoseidon } from "./utils";
+import { hash } from "./utils";
 
 export async function buildMerkleTree(levels: number): Promise<MerkleTree> {
-  return new MerkleTree(levels, await getPoseidon());
+  return new MerkleTree(levels, hash);
 }
 
 export class MerkleTree {
