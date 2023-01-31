@@ -20,30 +20,30 @@ export class MerkleTree {
     leaves.map((o: any) => this.tree.insert(o));
   }
 
-  getRoot(): string {
+  getRoot(): BigInt {
     return this.tree.root;
   }
 
   merkleProof(index: number): MerkleProof {
     const proof = this.tree.createProof(index);
-    let pathIndices = BigNumber.from(0);
+    let pathIndices = BigInt(0);
     for (let i = 0; i < proof.pathIndices.length; i++) {
-      pathIndices = pathIndices.or(BigNumber.from(proof.pathIndices[i]).shl(i));
+      pathIndices |= BigInt(proof.pathIndices[i]) << BigInt(i);
     }
 
     const proof2: MerkleProof = {
       root: proof.root,
       leaf: proof.leaf,
-      siblings: proof.siblings.map((o: string[]) => o[0]),
-      pathIndices: pathIndices.toString(),
+      siblings: proof.siblings.map((o: BigInt[]) => o[0]),
+      pathIndices: pathIndices,
     };
     return proof2;
   }
 }
 
 export type MerkleProof = {
-  root: string;
-  leaf: string;
-  siblings: string[];
-  pathIndices: string;
+  root: BigInt;
+  leaf: BigInt;
+  siblings: BigInt[];
+  pathIndices: BigInt;
 };
