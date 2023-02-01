@@ -43,7 +43,7 @@ describe("Account related actions", async () => {
     const a = new Account();
 
     const generated = payToAddress(a.getAddress(), BigInt(500));
-    a.attemptDecryptAndAdd(generated.utxo.commitment, generated.encrypted, BigInt(0));
+    a.attemptDecryptAndAdd(generated.commitment, generated.encryptedData, BigInt(0));
     expect(a.ownedUtxos.length).eq(1);
   });
 });

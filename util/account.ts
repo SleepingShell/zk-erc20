@@ -66,10 +66,7 @@ export class Account {
    *
    * @returns The commitment, blinding and encrypted data
    */
-  generateAndEncryptCommitment(amount: bigint): {
-    utxo: Utxo;
-    encrypted: string;
-  } {
+  generateAndEncryptCommitment(amount: bigint): UtxoOutput {
     const blinding = randomBytes32();
     const commitment = generateCommitment(amount, this.publicKey, blinding);
     const encryptedData = encrypt({
@@ -77,10 +74,8 @@ export class Account {
       data: packCommitment(amount, blinding),
       version: VERSION,
     });
-    return {
-      utxo: new Utxo(commitment, amount, blinding),
-      encrypted: packEncryptedData(encryptedData),
-    };
+
+    return new UtxoOutput(commitment, amount, blinding, this.publicKey, packEncryptedData(encryptedData));
   }
 }
 
@@ -88,13 +83,7 @@ export function generateCommitment(amount: bigint, pubkey: bigint, blinding: big
   return hash([amount, pubkey, blinding]);
 }
 
-export function payToAddress(
-  address: string,
-  amount: bigint
-): {
-  utxo: Utxo;
-  encrypted: string;
-} {
+export function payToAddress(address: string, amount: bigint): UtxoOutput {
   return Account.fromAddress(address).generateAndEncryptCommitment(amount);
 }
 
@@ -128,6 +117,27 @@ export class Utxo {
 
   setIndex(index: bigint) {
     this.index = index;
+  }
+}
+
+export class UtxoOutput extends Utxo {
+  pubkey: bigint;
+  encryptedData: string;
+
+  constructor(commitment: bigint, amount: bigint, blinding: bigint, pubkey: bigint, encryptedData: string) {
+    super(commitment, amount, blinding);
+    this.pubkey = pubkey;
+    this.encryptedData = encryptedData;
+  }
+}
+
+export class UtxoWithKey extends Utxo {
+  privateKey: bigint;
+
+  constructor(commitment: bigint, amount: bigint, blinding: bigint, index: bigint, privateKey: bigint) {
+    super(commitment, amount, blinding, index);
+    this.privateKey = privateKey;
+    super.setNullifier(privateKey);
   }
 }
 

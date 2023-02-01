@@ -1,6 +1,7 @@
 import { plonk } from "snarkjs";
 
 import { ZkERC20 } from "../types/contracts/ZkERC20";
+import { UtxoOutput, UtxoWithKey } from "./account";
 import { MerkleProof, MerkleTree } from "./merkleProof";
 type DepositArgsStruct = ZkERC20.DepositArgsStruct;
 type TransactionArgsStruct = ZkERC20.TransactionArgsStruct;
@@ -8,21 +9,12 @@ type TransactionArgsStruct = ZkERC20.TransactionArgsStruct;
 const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
 const depositCircuitKeyPath = "build/Deposit/Deposit.zkey";
 
-export async function depositProof(
-  depositAmount: bigint,
-  commitmentInputs: {
-    amount: bigint;
-    pubkey: bigint;
-    blinding: bigint;
-    commitment: bigint;
-    encryptedOutput: string;
-  }[]
-): Promise<DepositArgsStruct> {
-  const input = {
-    outAmounts: [commitmentInputs[0].amount, commitmentInputs[1].amount],
-    outPubkeys: [commitmentInputs[0].pubkey, commitmentInputs[1].pubkey],
-    outBlindings: [commitmentInputs[0].blinding, commitmentInputs[1].blinding],
-    outCommitments: [commitmentInputs[0].commitment, commitmentInputs[1].commitment],
+export async function depositProof(depositAmount: bigint, outputs: UtxoOutput[]): Promise<DepositArgsStruct> {
+  const input: DepositProofInput = {
+    outAmounts: [outputs[0].amount, outputs[1].amount],
+    outPubkeys: [outputs[0].pubkey, outputs[1].pubkey],
+    outBlindings: [outputs[0].blinding, outputs[1].blinding],
+    outCommitments: [outputs[0].commitment, outputs[1].commitment],
     depositAmount: depositAmount,
   };
 
@@ -32,38 +24,33 @@ export async function depositProof(
 
   const args: DepositArgsStruct = {
     depositAmount: depositAmount,
-    outCommitments: [commitmentInputs[0].commitment, commitmentInputs[1].commitment],
-    encryptedOutputs: ["0x" + commitmentInputs[0].encryptedOutput, "0x" + commitmentInputs[1].encryptedOutput],
+    outCommitments: [outputs[0].commitment, outputs[1].commitment],
+    encryptedOutputs: ["0x" + outputs[0].encryptedData, "0x" + outputs[1].encryptedData],
     proof: proofCalldata,
   };
 
   return args;
 }
 
-// TODO: Utilize UTXO structs to pass inputs/outputs
+type DepositProofInput = {
+  outAmounts: bigint[];
+  outPubkeys: bigint[];
+  outBlindings: bigint[];
+
+  outCommitments: bigint[];
+  depositAmount: bigint;
+};
+
 export async function transactionProof(
   tree: MerkleTree,
   withdrawAmount: bigint,
-  inputs: {
-    commitment: bigint;
-    amount: bigint;
-    bliding: bigint;
-    index: bigint;
-    nullifier: bigint;
-    privateKey: bigint;
-  }[],
-  outputs: {
-    amount: bigint;
-    pubkey: bigint;
-    bliding: bigint;
-    commitment: bigint;
-    encrypted: string;
-  }[]
+  inputs: UtxoWithKey[],
+  outputs: UtxoOutput[]
 ): Promise<TransactionArgsStruct> {
-  const proofInput: TransactionProofInputs = {
+  const proofInput: TransactionProofInput = {
     inRoot: tree.getRoot(),
     withdrawAmount: withdrawAmount,
-  } as TransactionProofInputs;
+  } as TransactionProofInput;
 
   let mProof: MerkleProof;
   for (const input of inputs) {
@@ -71,7 +58,7 @@ export async function transactionProof(
 
     proofInput.inCommitment.push(input.commitment);
     proofInput.inAmount.push(input.amount);
-    proofInput.inBlinding.push(input.bliding);
+    proofInput.inBlinding.push(input.blinding);
     proofInput.inPathIndices.push(mProof.pathIndices);
     proofInput.inPathElements.push(mProof.siblings);
     proofInput.inNullifier.push(input.nullifier);
@@ -82,9 +69,9 @@ export async function transactionProof(
   for (const output of outputs) {
     proofInput.outAmount.push(output.amount);
     proofInput.outPubkey.push(output.pubkey);
-    proofInput.outBlinding.push(output.bliding);
+    proofInput.outBlinding.push(output.blinding);
     proofInput.outCommitment.push(output.commitment);
-    encryptedOutputs.push("0x" + output.encrypted);
+    encryptedOutputs.push("0x" + output.encryptedData);
   }
 
   const path = getCircuitPath(inputs.length, outputs.length);
@@ -104,7 +91,7 @@ export async function transactionProof(
   return args;
 }
 
-type TransactionProofInputs = {
+type TransactionProofInput = {
   inRoot: bigint;
   withdrawAmount: bigint;
   inNullifier: bigint[];

@@ -53,14 +53,14 @@ describe("Transaction proving and verification", async () => {
     const amount1 = BigInt(100);
     const amount2 = BigInt(200);
 
-    const commit1args = payToAddress(address1, amount1);
-    const commit2args = payToAddress(address2, amount2);
+    const output1 = payToAddress(address1, amount1);
+    const output2 = payToAddress(address2, amount2);
 
     const input = {
       outAmounts: [amount1, amount2],
       outPubkeys: [account1.publicKey, account2.publicKey],
-      outBlindings: [commit1args.utxo.blinding, commit2args.utxo.blinding],
-      outCommitments: [commit1args.utxo.commitment, commit2args.utxo.commitment],
+      outBlindings: [output1.blinding, output2.blinding],
+      outCommitments: [output1.commitment, output2.commitment],
       depositAmount: amount1 + amount2,
     };
 
@@ -78,34 +78,19 @@ describe("Transaction proving and verification", async () => {
     const amount1 = BigInt(100);
     const amount2 = BigInt(200);
 
-    const commit1args = payToAddress(address1, amount1);
-    const commit2args = payToAddress(address2, amount2);
+    const output1 = payToAddress(address1, amount1);
+    const output2 = payToAddress(address2, amount2);
 
-    const args = await depositProof(amount1 + amount2, [
-      {
-        amount: amount1,
-        pubkey: account1.publicKey,
-        blinding: commit1args.utxo.blinding,
-        commitment: commit1args.utxo.commitment,
-        encryptedOutput: commit1args.encrypted,
-      },
-      {
-        amount: amount2,
-        pubkey: account2.publicKey,
-        blinding: commit2args.utxo.blinding,
-        commitment: commit2args.utxo.commitment,
-        encryptedOutput: commit2args.encrypted,
-      },
-    ]);
+    const args = await depositProof(amount1 + amount2, [output1, output2]);
 
     await zkerc20.deposit(args);
 
     const depositFilter = zkerc20.filters.Deposit(null);
     const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
     expect(events[0].args.index).eq(0);
-    expect(events[0].args.commitment).eq(commit1args.utxo.commitment);
+    expect(events[0].args.commitment).eq(output1.commitment);
     expect(events[1].args.index).eq(1);
-    expect(events[1].args.commitment).eq(commit2args.utxo.commitment);
+    expect(events[1].args.commitment).eq(output2.commitment);
   });
 
   it("Transaction contract", async () => {});

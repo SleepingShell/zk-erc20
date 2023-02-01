@@ -16,8 +16,8 @@ describe("Circuit: Transaction", async () => {
     const a = new Account();
     const b = new Account();
     const amount = BigInt(100);
-    const { utxo: inUtxo } = payToAddress(a.getAddress(), amount);
-    const { utxo: outUtxo } = payToAddress(b.getAddress(), amount);
+    const inUtxo = payToAddress(a.getAddress(), amount);
+    const outUtxo = payToAddress(b.getAddress(), amount);
     inUtxo.setIndex(0n);
     outUtxo.setIndex(1n);
     inUtxo.setNullifier(a.privateKey);
