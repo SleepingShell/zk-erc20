@@ -59,8 +59,8 @@ describe("Transaction proving and verification", async () => {
     const input = {
       outAmounts: [amount1, amount2],
       outPubkeys: [account1.publicKey, account2.publicKey],
-      outBlindings: [commit1args.blinding, commit2args.blinding],
-      outCommitments: [commit1args.commitment, commit2args.commitment],
+      outBlindings: [commit1args.utxo.blinding, commit2args.utxo.blinding],
+      outCommitments: [commit1args.utxo.commitment, commit2args.utxo.commitment],
       depositAmount: amount1 + amount2,
     };
 
@@ -85,15 +85,15 @@ describe("Transaction proving and verification", async () => {
       {
         amount: amount1,
         pubkey: account1.publicKey,
-        blinding: commit1args.blinding,
-        commitment: commit1args.commitment,
+        blinding: commit1args.utxo.blinding,
+        commitment: commit1args.utxo.commitment,
         encryptedOutput: commit1args.encrypted,
       },
       {
         amount: amount2,
         pubkey: account2.publicKey,
-        blinding: commit2args.blinding,
-        commitment: commit2args.commitment,
+        blinding: commit2args.utxo.blinding,
+        commitment: commit2args.utxo.commitment,
         encryptedOutput: commit2args.encrypted,
       },
     ]);
@@ -103,8 +103,10 @@ describe("Transaction proving and verification", async () => {
     const depositFilter = zkerc20.filters.Deposit(null);
     const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
     expect(events[0].args.index).eq(0);
-    expect(events[0].args.commitment).eq(commit1args.commitment);
+    expect(events[0].args.commitment).eq(commit1args.utxo.commitment);
     expect(events[1].args.index).eq(1);
-    expect(events[1].args.commitment).eq(commit2args.commitment);
+    expect(events[1].args.commitment).eq(commit2args.utxo.commitment);
   });
+
+  it("Transaction contract", async () => {});
 });

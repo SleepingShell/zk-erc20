@@ -16,28 +16,30 @@ describe("Circuit: Transaction", async () => {
     const a = new Account();
     const b = new Account();
     const amount = BigInt(100);
-    const { commitment: inCommitment, blinding: inBlinding } = payToAddress(a.getAddress(), amount);
-    const { commitment: outCommitment, blinding: outBlinding } = payToAddress(b.getAddress(), amount);
-    const inNullifier = a.getNullifier(inCommitment, BigInt(0));
+    const { utxo: inUtxo } = payToAddress(a.getAddress(), amount);
+    const { utxo: outUtxo } = payToAddress(b.getAddress(), amount);
+    inUtxo.setIndex(0n);
+    outUtxo.setIndex(1n);
+    inUtxo.setNullifier(a.privateKey);
 
-    tree.addLeaves([inCommitment]);
+    tree.addLeaves([inUtxo.commitment]);
     const merkleProof = tree.merkleProof(0);
 
     const input = {
-      inCommitment: [inCommitment],
+      inCommitment: [inUtxo.commitment],
       inAmount: [amount],
-      inBlinding: [inBlinding],
+      inBlinding: [inUtxo.blinding],
       inPathIndices: [merkleProof.pathIndices],
       inPathElements: [merkleProof.siblings],
       inPrivateKey: [a.privateKey],
 
       outAmount: [amount],
       outPubkey: [b.publicKey],
-      outBlinding: [outBlinding],
+      outBlinding: [outUtxo.blinding],
 
       inRoot: merkleProof.root,
-      outCommitment: [outCommitment],
-      inNullifier: [inNullifier],
+      outCommitment: [outUtxo.commitment],
+      inNullifier: [inUtxo.nullifier],
       withdrawAmount: 0,
     };
 
