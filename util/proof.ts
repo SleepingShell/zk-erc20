@@ -1,6 +1,5 @@
 import { plonk } from "snarkjs";
 
-import { BigNumber } from "ethers";
 import { ZkERC20 } from "../types/contracts/ZkERC20";
 import { MerkleProof, MerkleTree } from "./merkleProof";
 type DepositArgsStruct = ZkERC20.DepositArgsStruct;
@@ -10,12 +9,12 @@ const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
 const depositCircuitKeyPath = "build/Deposit/Deposit.zkey";
 
 export async function depositProof(
-  depositAmount: BigInt,
+  depositAmount: bigint,
   commitmentInputs: {
-    amount: BigInt;
-    pubkey: BigInt;
-    blinding: BigInt;
-    commitment: BigInt;
+    amount: bigint;
+    pubkey: bigint;
+    blinding: bigint;
+    commitment: bigint;
     encryptedOutput: string;
   }[]
 ): Promise<DepositArgsStruct> {
@@ -32,8 +31,8 @@ export async function depositProof(
   const proofCalldata = calldata.split(",")[0];
 
   const args: DepositArgsStruct = {
-    depositAmount: BigNumber.from(depositAmount),
-    outCommitments: [BigNumber.from(commitmentInputs[0].commitment), BigNumber.from(commitmentInputs[1].commitment)],
+    depositAmount: depositAmount,
+    outCommitments: [commitmentInputs[0].commitment, commitmentInputs[1].commitment],
     encryptedOutputs: ["0x" + commitmentInputs[0].encryptedOutput, "0x" + commitmentInputs[1].encryptedOutput],
     proof: proofCalldata,
   };
@@ -44,20 +43,20 @@ export async function depositProof(
 // TODO: Utilize UTXO structs to pass inputs/outputs
 export async function transactionProof(
   tree: MerkleTree,
-  withdrawAmount: BigInt,
+  withdrawAmount: bigint,
   inputs: {
-    commitment: BigInt;
-    amount: BigInt;
-    bliding: BigInt;
-    index: BigInt;
-    nullifier: BigInt;
-    privateKey: BigInt;
+    commitment: bigint;
+    amount: bigint;
+    bliding: bigint;
+    index: bigint;
+    nullifier: bigint;
+    privateKey: bigint;
   }[],
   outputs: {
-    amount: BigInt;
-    pubkey: BigInt;
-    bliding: BigInt;
-    commitment: BigInt;
+    amount: bigint;
+    pubkey: bigint;
+    bliding: bigint;
+    commitment: bigint;
     encrypted: string;
   }[]
 ): Promise<TransactionArgsStruct> {
@@ -91,13 +90,13 @@ export async function transactionProof(
   const path = getCircuitPath(inputs.length, outputs.length);
   const { proof, publicSignals } = await plonk.fullProve(proofInput, path.circuit, path.key);
   const calldata: string = await plonk.exportSolidityCallData(proof, publicSignals);
-  const proofCalldata = calldata.split(",");
+  const proofCalldata = calldata.split(",")[0];
 
   const args: TransactionArgsStruct = {
-    root: BigNumber.from(proofInput.inRoot),
-    withdrawAmount: BigNumber.from(proofInput.withdrawAmount),
+    root: proofInput.inRoot,
+    withdrawAmount: proofInput.withdrawAmount,
     inNullifiers: proofInput.inNullifier,
-    outCommitments: proofInput.outCommitment, //TODO: Figure out how to avoid casting to BigNumber
+    outCommitments: proofInput.outCommitment,
     encryptedOutputs: encryptedOutputs,
     proof: proofCalldata,
   };
@@ -106,21 +105,21 @@ export async function transactionProof(
 }
 
 type TransactionProofInputs = {
-  inRoot: BigInt;
-  withdrawAmount: BigInt;
-  inNullifier: BigInt[];
-  outCommitment: BigInt[];
+  inRoot: bigint;
+  withdrawAmount: bigint;
+  inNullifier: bigint[];
+  outCommitment: bigint[];
 
-  inCommitment: BigInt[];
-  inAmount: BigInt[];
-  inBlinding: BigInt[];
-  inPathIndices: BigInt[];
-  inPathElements: BigInt[][];
-  inPrivateKey: BigInt[];
+  inCommitment: bigint[];
+  inAmount: bigint[];
+  inBlinding: bigint[];
+  inPathIndices: bigint[];
+  inPathElements: bigint[][];
+  inPrivateKey: bigint[];
 
-  outAmount: BigInt[];
-  outPubkey: BigInt[];
-  outBlinding: BigInt[];
+  outAmount: bigint[];
+  outPubkey: bigint[];
+  outBlinding: bigint[];
 };
 
 function getCircuitPath(numInputs: number, numOutputs: number): { circuit: string; key: string } {

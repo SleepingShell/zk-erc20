@@ -56,10 +56,6 @@ export class Account {
     } catch (error) {}
   }
 
-  getNullifier(commitment: bigint, index: bigint): bigint {
-    return hash([commitment, index, this.privateKey]);
-  }
-
   /**
    * Generates a commitment destined for this account
    *
@@ -71,8 +67,7 @@ export class Account {
    * @returns The commitment, blinding and encrypted data
    */
   generateAndEncryptCommitment(amount: bigint): {
-    commitment: bigint;
-    blinding: bigint;
+    utxo: Utxo;
     encrypted: string;
   } {
     const blinding = randomBytes32();
@@ -83,8 +78,7 @@ export class Account {
       version: VERSION,
     });
     return {
-      commitment: commitment,
-      blinding: blinding,
+      utxo: new Utxo(commitment, amount, blinding),
       encrypted: packEncryptedData(encryptedData),
     };
   }
@@ -98,8 +92,7 @@ export function payToAddress(
   address: string,
   amount: bigint
 ): {
-  commitment: bigint;
-  blinding: bigint;
+  utxo: Utxo;
   encrypted: string;
 } {
   return Account.fromAddress(address).generateAndEncryptCommitment(amount);
@@ -107,16 +100,33 @@ export function payToAddress(
 
 export class Utxo {
   commitment: bigint;
-
   amount: bigint;
   blinding: bigint;
-
   index: bigint;
+  nullifier: bigint;
 
-  constructor(commitment: bigint, amount: bigint, blinding: bigint, index: bigint) {
+  constructor(commitment: bigint, amount: bigint, blinding: bigint = 0n, index: bigint = -1n) {
     this.commitment = commitment;
     this.amount = amount;
     this.blinding = blinding;
+    this.index = index;
+    this.nullifier = 0n;
+  }
+
+  /**
+   * Sets the nullifier for this utxo with the given private key.
+   * Does NOT check that the private key is the proper owner
+   *
+   * @param privateKey key used to generate the nullifier
+   */
+  setNullifier(privateKey: bigint) {
+    if (this.index == -1n) {
+      throw new Error("Invalid index");
+    }
+    this.nullifier = hash([this.commitment, this.index, privateKey]);
+  }
+
+  setIndex(index: bigint) {
     this.index = index;
   }
 }
