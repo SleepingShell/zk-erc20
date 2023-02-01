@@ -12,13 +12,13 @@ describe("Circuit: Deposit", async () => {
   it("Deposit commitments are correct", async () => {
     const a = new Account();
 
-    const amount1 = BigInt(500);
+    const amount1 = 500n;
     const pubkey1 = a.publicKey;
     const blinding1 = randomBytes32();
     const commit1 = generateCommitment(amount1, pubkey1, blinding1);
 
-    const amount2 = BigInt(0);
-    const pubkey2 = BigInt(0);
+    const amount2 = 0n;
+    const pubkey2 = 0n;
     const blinding2 = randomBytes32();
     const commit2 = generateCommitment(amount2, pubkey2, blinding2);
 

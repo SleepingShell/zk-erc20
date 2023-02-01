@@ -50,8 +50,8 @@ describe("Transaction proving and verification", async () => {
     const account2 = new Account();
     const address1 = account1.getAddress();
     const address2 = account2.getAddress();
-    const amount1 = BigInt(100);
-    const amount2 = BigInt(200);
+    const amount1 = 100n;
+    const amount2 = 200n;
 
     const output1 = payToAddress(address1, amount1);
     const output2 = payToAddress(address2, amount2);
@@ -75,8 +75,8 @@ describe("Transaction proving and verification", async () => {
     const account2 = new Account();
     const address1 = account1.getAddress();
     const address2 = account2.getAddress();
-    const amount1 = BigInt(100);
-    const amount2 = BigInt(200);
+    const amount1 = 100n;
+    const amount2 = 200n;
 
     const output1 = payToAddress(address1, amount1);
     const output2 = payToAddress(address2, amount2);
