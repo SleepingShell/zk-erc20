@@ -11,6 +11,7 @@ import {
   packCommitment,
   packEncryptedData,
 } from "./encoding";
+import { randomBytes } from "crypto";
 
 const VERSION = "x25519-xsalsa20-poly1305";
 
@@ -52,7 +53,10 @@ export class Account {
       const encryptedData = unpackEncryptedData(data);
       const packedDecrypted = decrypt({ encryptedData: encryptedData, privateKey: this.privateKey.toString(16) });
       const { amount, blinding } = unpackCommitment(packedDecrypted);
-      this.ownedUtxos.push(new Utxo(commitment, amount, blinding, index));
+
+      const utxo = new Utxo(commitment, amount, blinding, index);
+      utxo.setNullifier(this.privateKey);
+      this.ownedUtxos.push(utxo);
     } catch (error) {}
   }
 
@@ -77,6 +81,16 @@ export class Account {
 
     return new UtxoOutput(commitment, amount, blinding, this.publicKey, packEncryptedData(encryptedData));
   }
+
+  getKeyedUtxo(arrIndex: number): UtxoWithKey {
+    const u: UtxoWithKey = Object.assign({}, this.ownedUtxos[arrIndex], { privateKey: this.privateKey });
+    return u;
+  }
+}
+
+export function generateZeroUtxoOutput(): UtxoOutput {
+  const blinding = randomBytes32();
+  return new UtxoOutput(generateCommitment(0n, 0n, blinding), 0n, blinding, 0n, randomBytes(400).toString("hex"));
 }
 
 export function generateCommitment(amount: bigint, pubkey: bigint, blinding: bigint): bigint {

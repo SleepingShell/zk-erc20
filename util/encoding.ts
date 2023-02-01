@@ -35,7 +35,6 @@ export function packEncryptedData(data: EthEncryptedData): string {
   const nonce = Buffer.from(data.nonce, "base64");
   const ephemPublicKey = Buffer.from(data.ephemPublicKey, "base64");
   const ciphertext = Buffer.from(data.ciphertext, "base64");
-
   const packed = Buffer.concat([
     Buffer.alloc(NONCE_LENGTH - nonce.length),
     nonce,
@@ -48,7 +47,7 @@ export function packEncryptedData(data: EthEncryptedData): string {
 }
 
 export function unpackEncryptedData(data: string): EthEncryptedData {
-  const buffer = Buffer.from(data, "hex");
+  const buffer = Buffer.from(data.replace("0x", ""), "hex");
   const nonce = buffer.subarray(0, NONCE_LENGTH);
   const ephemPublicKey = buffer.subarray(NONCE_LENGTH, NONCE_LENGTH + 32);
   const ciphertext = buffer.subarray(NONCE_LENGTH + 32);

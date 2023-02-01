@@ -50,7 +50,21 @@ export async function transactionProof(
   const proofInput: TransactionProofInput = {
     inRoot: tree.getRoot(),
     withdrawAmount: withdrawAmount,
-  } as TransactionProofInput;
+
+    inNullifier: new Array(0),
+    outCommitment: new Array(0),
+
+    inCommitment: new Array(0),
+    inAmount: new Array(0),
+    inBlinding: new Array(0),
+    inPathIndices: new Array(0),
+    inPathElements: new Array(0),
+    inPrivateKey: new Array(0),
+
+    outAmount: new Array(0),
+    outPubkey: new Array(0),
+    outBlinding: new Array(0),
+  };
 
   let mProof: MerkleProof;
   for (const input of inputs) {

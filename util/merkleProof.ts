@@ -20,6 +20,10 @@ export class MerkleTree {
     leaves.map((o: any) => this.tree.insert(o));
   }
 
+  setLeaf(index: number, leaf: any) {
+    this.tree.update(index, leaf);
+  }
+
   getRoot(): bigint {
     return this.tree.root;
   }
