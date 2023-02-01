@@ -78,6 +78,7 @@ A user deposits by creating a transaction with 0-value commitments.
   - Prove in zk updating the commitment tree, therefore only posting the root publicly
   - Prove in zk updating the nullifier set, therefore we can utilize a sparse merkle tree for proving nonmembership
   - Note the limitation in the earlier section still applies. Users would have to generate proofs with the latest data
+- Aggregation of proof using something like [Maze](https://github.com/privacy-scaling-explorations/maze)
 
 #### Random notes
 

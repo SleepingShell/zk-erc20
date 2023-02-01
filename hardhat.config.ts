@@ -15,6 +15,9 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: "./types",
   },
+  mocha: {
+    timeout: 100000, //Required for long zk proving times
+  },
 };
 
 export default config;
