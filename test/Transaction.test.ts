@@ -7,6 +7,8 @@ import { Account, payToAddress } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof } from "../util/proof";
 
+import { DepositEvent } from "../types/contracts/ZkERC20";
+
 import { poseidonContract as poseidonContract } from "circomlibjs";
 
 describe("Transaction proving and verification", async () => {
@@ -97,5 +99,12 @@ describe("Transaction proving and verification", async () => {
     ]);
 
     await zkerc20.deposit(args);
+
+    const depositFilter = zkerc20.filters.Deposit(null);
+    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
+    expect(events[0].args.index).eq(0);
+    expect(events[0].args.commitment).eq(commit1args.commitment);
+    expect(events[1].args.index).eq(1);
+    expect(events[1].args.commitment).eq(commit2args.commitment);
   });
 });
