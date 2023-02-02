@@ -2,10 +2,12 @@ pragma solidity ^0.8.0;
 
 import "@zk-kit/incremental-merkle-tree.sol/IncrementalBinaryTree.sol";
 
-import "./interfaces/IDepositVerifier.sol";
-import "./interfaces/ITransaction1x1Verifier.sol";
-import "./interfaces/ITransaction1x2Verifier.sol";
-import "./interfaces/ITransaction2x2Verifier.sol";
+interface IVerifier {
+  function verifyProof(bytes memory proof, uint[] memory pubSignals)
+    external
+    view
+    returns (bool);
+  }
 
 contract zkERC20 {
   using IncrementalBinaryTree for IncrementalTreeData;
@@ -14,8 +16,8 @@ contract zkERC20 {
   event Deposit(address indexed sender, uint256 commitment, uint256 index, bytes encryptedData);
   event Commitment(uint256 commitment, uint256 index, bytes encryptedData);
 
-  IncrementalTreeData tree;
-  IDepositVerifier depositVerifier;
+  IncrementalTreeData public tree;
+  IVerifier depositVerifier;
   
   mapping(uint256 => bool) nullifiers;
 
@@ -23,7 +25,7 @@ contract zkERC20 {
   ///       valid root. Not necessairly the latest one
   mapping(uint256 => bool) public isValidCommitmentRoot;
 
-  mapping(uint256 => address) public verifiers;
+  mapping(uint256 => IVerifier) public verifiers;
 
   struct DepositArgs {
     uint256 depositAmount;
@@ -44,10 +46,15 @@ contract zkERC20 {
   constructor(
     uint256 _depth,
     uint256 _zero,
-    IDepositVerifier _depositVerifier
+    IVerifier _depositVerifier
   ) {
     tree.init(_depth, _zero);
     depositVerifier = _depositVerifier;
+  }
+
+  // TODO: Protect function
+  function addVerifier(uint256 numInputs, uint256 numOutputs, IVerifier verifier) external {
+    verifiers[getEncodedVerifierLookup(numInputs, numOutputs)] = verifier;
   }
 
   function deposit(DepositArgs calldata args) external {
@@ -73,13 +80,12 @@ contract zkERC20 {
   }
 
   function transact(TransactionArgs calldata args) external {
-    require(isValidCommitmentRoot[args.root]);
+    require(isValidCommitmentRoot[args.root], 'Invalid root');
     uint256 numInputs = args.inNullifiers.length;
     uint256 numOutputs = args.outCommitments.length;
 
-    // TODO: Generic verifier interface (they all use the same function)
-    address verifier = verifiers[getEncodedVerifierLookup(numInputs, numOutputs)];
-    require(verifier != address(0), 'Unsupported tx format');
+    IVerifier verifier = verifiers[getEncodedVerifierLookup(numInputs, numOutputs)];
+    require(address(verifier) != address(0), 'Unsupported tx format');
 
     uint256[] memory publicSignals = new uint256[](2 + numInputs + numOutputs);
     publicSignals[0] = args.root;
@@ -89,7 +95,7 @@ contract zkERC20 {
     uint i;
     while (i < numInputs) {
       nullifier = args.inNullifiers[i];
-      require(!nullifiers[nullifier]);
+      require(!nullifiers[nullifier], 'Double spend');
       nullifiers[nullifier] = true;
       publicSignals[i+2] = nullifier;
       unchecked {
@@ -108,7 +114,7 @@ contract zkERC20 {
       }
     }
 
-    // require(IVerifier(verifier).verifyProof(args.proof, publicSignals));
+    require(verifier.verifyProof(args.proof, publicSignals));
 
     if (args.withdrawAmount > 0) {
       // TODO: Transfer withdrawn amount.

@@ -21,6 +21,16 @@ describe("Transaction proving and verification", async () => {
   let verifier: DepositVerifier;
   let zkerc20: ZkERC20;
 
+  const deployVerifiers = async (zkerc20: ZkERC20) => {
+    const tx1x1 = (await (await ethers.getContractFactory("Transaction1x1Verifier")).deploy()).address;
+    const tx1x2 = (await (await ethers.getContractFactory("Transaction1x2Verifier")).deploy()).address;
+    const tx2x2 = (await (await ethers.getContractFactory("Transaction2x2Verifier")).deploy()).address;
+
+    await zkerc20.addVerifier(1, 1, tx1x1);
+    await zkerc20.addVerifier(1, 2, tx1x2);
+    await zkerc20.addVerifier(2, 2, tx2x2);
+  };
+
   beforeEach(async () => {
     [user1, user2] = await ethers.getSigners();
     verifier = (await (await ethers.getContractFactory("DepositVerifier")).deploy()) as DepositVerifier;
@@ -44,7 +54,8 @@ describe("Transaction proving and verification", async () => {
         IncrementalBinaryTree: incrementalTreeLib.address,
       },
     });
-    zkerc20 = (await zkerc20Factory.deploy(10, 0, verifier.address)) as ZkERC20;
+    zkerc20 = (await zkerc20Factory.deploy(20, 0, verifier.address)) as ZkERC20;
+    await deployVerifiers(zkerc20);
   });
 
   it("Verifier contract", async () => {
@@ -113,14 +124,18 @@ describe("Transaction proving and verification", async () => {
     const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
 
     // TODO: Whatever utility monitors the blockchain must ensure correct leaf addition order
+    const toAdd: Map<bigint, bigint> = new Map();
     for (let event of events) {
-      tree.addLeaves([event.args.commitment.toBigInt()]);
+      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
       account1.attemptDecryptAndAdd(
         event.args.commitment.toBigInt(),
         event.args.encryptedData,
         event.args.index.toBigInt()
       );
     }
+
+    const sorted = [...toAdd].sort();
+    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
 
     expect(account1.ownedUtxos.length).eq(1);
 
@@ -139,5 +154,7 @@ describe("Transaction proving and verification", async () => {
     for (let event of txevents) {
       console.log(event.args);
     }
+
+    await expect(zkerc20.transact(txArgs)).revertedWith("Double spend");
   });
 });
