@@ -65,7 +65,6 @@ A user deposits by creating a transaction with 0-value commitments.
 
 - [ ] Unify all tests + typescript files to use a single typed witness calculator variable, since they are all the same (or maybe make upstream shield change)
 - [x] Clean up account and exported functions should only deal with addresses, not keys directly
-- [ ] Exposed functions should return objects ready to be digested by snarkjs prover
 - [x] Convert BigNumbers to either string or BigInt (?)
 - [x] Move functions out of account class
   - Shouldn't require having to build Poseidon multiple times
