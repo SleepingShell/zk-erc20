@@ -10,13 +10,13 @@ const { packCommitment, unpackCommitment, packEncryptedData, unpackEncryptedData
 
 describe("Account related actions", async () => {
   it("Packing commitment functions", async () => {
-    const realAmount = 100000n;
+    const realAmount = [100000n, 0n, 0n, 50n, 0n, 0n, 0n, 5828n, 0n, 0n];
     const realBlinding = randomBytes32();
 
     const packedCommit = packCommitment(realAmount, realBlinding);
     const { amount, blinding } = unpackCommitment(packedCommit);
 
-    expect(amount).eq(realAmount);
+    expect(amount).deep.eq(realAmount);
     expect(blinding).eq(realBlinding);
   });
 
@@ -42,7 +42,7 @@ describe("Account related actions", async () => {
   it("Encrypt to account", async () => {
     const a = new Account();
 
-    const generated = payToAddress(a.getAddress(), 500n);
+    const generated = payToAddress(a.getAddress(), [500n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n]);
     a.attemptDecryptAndAdd(generated.commitment, generated.encryptedData, 0n);
     expect(a.ownedUtxos.length).eq(1);
   });

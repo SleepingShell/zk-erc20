@@ -1,8 +1,11 @@
 import { EthEncryptedData } from "@metamask/eth-sig-util";
+import { MAX_TOKEN_TYPES } from "./constants";
 
 const NONCE_LENGTH = 24;
 const PUBKEY_LENGTH = 32;
 const VERSION = "x25519-xsalsa20-poly1305";
+
+// TODO: Compress the amount data for more efficient logging https://www.npmjs.com/package/gzip-js
 
 export function encodeAddress(publicKey: bigint, encryptKey: string): string {
   return publicKey
@@ -18,16 +21,22 @@ export function decodeAddress(address: string): [bigint, string] {
   return [pubkey, encryptKey];
 }
 
-export function packCommitment(amount: bigint, blinding: bigint): string {
-  const amountBuffer = Buffer.from(amount.toString(16).padStart(32 * 2, "0"), "hex");
+export function packCommitment(amount: bigint[], blinding: bigint): string {
+  let amountBuffer = Buffer.from(amount[0].toString(16).padStart(32 * 2, "0"), "hex");
+  for (let amt of amount.slice(1)) {
+    amountBuffer = Buffer.concat([amountBuffer, Buffer.from(amt.toString(16).padStart(32 * 2, "0"), "hex")]);
+  }
   const blindingBuffer = Buffer.from(blinding.toString(16).padStart(32 * 2, "0"), "hex");
-  return Buffer.concat([amountBuffer, blindingBuffer]).toString("hex");
+  return Buffer.concat([blindingBuffer, amountBuffer]).toString("hex");
 }
 
-export function unpackCommitment(data: string): { amount: bigint; blinding: bigint } {
+export function unpackCommitment(data: string): { amount: bigint[]; blinding: bigint } {
   const buf = Buffer.from(data, "hex");
-  const amount = BigInt("0x" + buf.subarray(0, 32).toString("hex"));
-  const blinding = BigInt("0x" + buf.subarray(32, 64).toString("hex"));
+  const blinding = BigInt("0x" + buf.subarray(0, 32).toString("hex"));
+  const amount = new Array<bigint>(MAX_TOKEN_TYPES);
+  for (let i = 0; i < MAX_TOKEN_TYPES; i++) {
+    amount[i] = BigInt("0x" + buf.subarray(32 + i * 32, 64 + i * 32).toString("hex"));
+  }
   return { amount, blinding };
 }
 

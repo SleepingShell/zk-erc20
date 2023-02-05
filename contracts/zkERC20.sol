@@ -12,6 +12,8 @@ interface IVerifier {
 contract zkERC20 {
   using IncrementalBinaryTree for IncrementalTreeData;
 
+  uint256 constant MAX_TOKENS = 10;
+
   // TODO: If we don't care to allow senders to index their deposits, then we only need thr transaction event
   event Deposit(address indexed sender, uint256 commitment, uint256 index, bytes encryptedData);
   event Commitment(uint256 commitment, uint256 index, bytes encryptedData);
@@ -28,7 +30,7 @@ contract zkERC20 {
   mapping(uint256 => IVerifier) public verifiers;
 
   struct DepositArgs {
-    uint256 depositAmount;
+    uint256[MAX_TOKENS] depositAmount;
     uint256[2] outCommitments;
     bytes[2] encryptedOutputs;
     bytes proof;
@@ -60,10 +62,12 @@ contract zkERC20 {
   function deposit(DepositArgs calldata args) external {
     //TODO: Verify payed amount and args.depositAmount match
     //TODO: Reentrancy
-    uint256[] memory publicSignals = new uint256[](3);
+    uint256[] memory publicSignals = new uint256[](2+MAX_TOKENS);
     publicSignals[0] = args.outCommitments[0];
     publicSignals[1] = args.outCommitments[1];
-    publicSignals[2] = args.depositAmount;
+    for (uint i = 0; i < MAX_TOKENS; i++) {
+      publicSignals[2+i] = args.depositAmount[i];
+    }
 
     require(depositVerifier.verifyProof(args.proof, publicSignals));
 

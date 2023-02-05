@@ -12,12 +12,12 @@ describe("Circuit: Deposit", async () => {
   it("Deposit commitments are correct", async () => {
     const a = new Account();
 
-    const amount1 = 500n;
+    const amount1 = [500n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const pubkey1 = a.publicKey;
     const blinding1 = randomBytes32();
     const commit1 = generateCommitment(amount1, pubkey1, blinding1);
 
-    const amount2 = 0n;
+    const amount2 = [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const pubkey2 = 0n;
     const blinding2 = randomBytes32();
     const commit2 = generateCommitment(amount2, pubkey2, blinding2);
@@ -27,7 +27,7 @@ describe("Circuit: Deposit", async () => {
       outPubkeys: [pubkey1, pubkey2],
       outBlindings: [blinding1, blinding2],
       outCommitments: [commit1, commit2],
-      depositAmount: amount1 + amount2,
+      depositAmount: amount1.map((num, i) => num + amount2[i]),
     };
 
     const wc = await buildWC(depositCircuit);

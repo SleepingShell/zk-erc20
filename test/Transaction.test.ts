@@ -63,8 +63,8 @@ describe("Transaction proving and verification", async () => {
     const account2 = new Account();
     const address1 = account1.getAddress();
     const address2 = account2.getAddress();
-    const amount1 = 100n;
-    const amount2 = 200n;
+    const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+    const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
     const output1 = payToAddress(address1, amount1);
     const output2 = payToAddress(address2, amount2);
@@ -74,7 +74,7 @@ describe("Transaction proving and verification", async () => {
       outPubkeys: [account1.publicKey, account2.publicKey],
       outBlindings: [output1.blinding, output2.blinding],
       outCommitments: [output1.commitment, output2.commitment],
-      depositAmount: amount1 + amount2,
+      depositAmount: amount1.map((amt, i) => amt + amount2[i]),
     };
 
     const { proof, publicSignals } = await plonk.fullProve(input, depositCircuitPath, depositCircuitKeyPath);
@@ -88,13 +88,16 @@ describe("Transaction proving and verification", async () => {
     const account2 = new Account();
     const address1 = account1.getAddress();
     const address2 = account2.getAddress();
-    const amount1 = 100n;
-    const amount2 = 200n;
+    const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+    const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
     const output1 = payToAddress(address1, amount1);
     const output2 = payToAddress(address2, amount2);
 
-    const args = await depositProof(amount1 + amount2, [output1, output2]);
+    const args = await depositProof(
+      amount1.map((amt, i) => amt + amount2[i]),
+      [output1, output2]
+    );
 
     await zkerc20.deposit(args);
 
@@ -106,14 +109,14 @@ describe("Transaction proving and verification", async () => {
     expect(events[1].args.commitment).eq(output2.commitment);
   });
 
-  it.only("Transaction contract", async () => {
+  it("Transaction contract", async () => {
     const tree = new MerkleTree(20, hash);
     const account1 = new Account();
     const account2 = new Account();
     const address1 = account1.getAddress();
     const address2 = account2.getAddress();
 
-    const depositAmount = 100n;
+    const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const output1 = payToAddress(address1, depositAmount);
     const output2 = generateZeroUtxoOutput();
 
@@ -139,8 +142,8 @@ describe("Transaction proving and verification", async () => {
 
     expect(account1.ownedUtxos.length).eq(1);
 
-    const amount3 = 50n;
-    const amount4 = 50n;
+    const amount3 = [50n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+    const amount4 = [50n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
     const txInput = account1.getKeyedUtxo(0);
     const output3 = payToAddress(address2, amount3);

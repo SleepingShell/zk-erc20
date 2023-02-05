@@ -1,6 +1,6 @@
 import { plonk } from "snarkjs";
 
-import { ZkERC20 } from "../types/contracts/ZkERC20";
+import { ZkERC20 } from "../types/contracts/ZkERC20.sol";
 import { UtxoOutput, UtxoWithKey } from "./account";
 import { MerkleProof, MerkleTree } from "./merkleProof";
 type DepositArgsStruct = ZkERC20.DepositArgsStruct;
@@ -9,7 +9,7 @@ type TransactionArgsStruct = ZkERC20.TransactionArgsStruct;
 const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
 const depositCircuitKeyPath = "build/Deposit/Deposit.zkey";
 
-export async function depositProof(depositAmount: bigint, outputs: UtxoOutput[]): Promise<DepositArgsStruct> {
+export async function depositProof(depositAmount: bigint[], outputs: UtxoOutput[]): Promise<DepositArgsStruct> {
   const input: DepositProofInput = {
     outAmounts: [outputs[0].amount, outputs[1].amount],
     outPubkeys: [outputs[0].pubkey, outputs[1].pubkey],
@@ -33,12 +33,12 @@ export async function depositProof(depositAmount: bigint, outputs: UtxoOutput[])
 }
 
 type DepositProofInput = {
-  outAmounts: bigint[];
+  outAmounts: bigint[][];
   outPubkeys: bigint[];
   outBlindings: bigint[];
 
   outCommitments: bigint[];
-  depositAmount: bigint;
+  depositAmount: bigint[];
 };
 
 export async function transactionProof(
@@ -112,13 +112,13 @@ type TransactionProofInput = {
   outCommitment: bigint[];
 
   inCommitment: bigint[];
-  inAmount: bigint[];
+  inAmount: bigint[][];
   inBlinding: bigint[];
   inPathIndices: bigint[];
   inPathElements: bigint[][];
   inPrivateKey: bigint[];
 
-  outAmount: bigint[];
+  outAmount: bigint[][];
   outPubkey: bigint[];
   outBlinding: bigint[];
 };

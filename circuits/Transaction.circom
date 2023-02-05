@@ -3,7 +3,9 @@ pragma circom 2.1.0;
 include "./MerkleProof.circom";
 
 /*
-commitment = hash(amount, pubKey, blinding)
+[amounts] is an array of all amounts of the commitment. 
+For example, if a commitment only has 100 of token type 1, and there are only 4 nTokens, then [0, 100, 0, 0]
+commitment = hash([amounts], pubKey, blinding)
 nullifier = hash(commitment, merkle tree index, privKey)
 */
 
@@ -17,16 +19,16 @@ template KeyPair() {
   publicKey <== hasher.out;
 }
 
-template Transaction(levels, nIns, nOuts) {
+template Transaction(levels, nIns, nOuts, nTokens) {
   // private signals
   signal input inCommitment[nIns];
-  signal input inAmount[nIns];
+  signal input inAmount[nIns][nTokens];
   signal input inBlinding[nIns];
   signal input inPathIndices[nIns];
   signal input inPathElements[nIns][levels];
   signal input inPrivateKey[nIns];
 
-  signal input outAmount[nOuts];
+  signal input outAmount[nOuts][nTokens];
   signal input outPubkey[nOuts];
   signal input outBlinding[nOuts];
 
@@ -44,19 +46,24 @@ template Transaction(levels, nIns, nOuts) {
   component checkRoot[nIns];
   component dupNullifiers[nIns * (nIns - 1) / 2];
 
-  var inTotal;
-  var outTotal;
-  var dupIndex = 0;
+  var dupIndex;
 
+  var inTotals[nTokens];
+  var outTotals[nTokens];
   // Check input commitments + nullifiers are valid
   for (var i = 0; i < nIns; i++) {
+    var nonzero; //If this commitment has ANY non-zero value
     inKeyPair[i] = KeyPair();
     inKeyPair[i].privateKey <== inPrivateKey[i];
 
-    inCommitmentHasher[i] = Poseidon(3);
-    inCommitmentHasher[i].inputs[0] <== inAmount[i];
-    inCommitmentHasher[i].inputs[1] <== inKeyPair[i].publicKey;
-    inCommitmentHasher[i].inputs[2] <== inBlinding[i];
+    inCommitmentHasher[i] = Poseidon(nTokens+2);
+    for (var t = 0; t < nTokens; t++) {
+      inCommitmentHasher[i].inputs[t] <== inAmount[i][t];
+      inTotals[t] += inAmount[i][t];
+      nonzero += inAmount[i][t];
+    }
+    inCommitmentHasher[i].inputs[nTokens] <== inKeyPair[i].publicKey;
+    inCommitmentHasher[i].inputs[nTokens+1] <== inBlinding[i];
     inCommitment[i] === inCommitmentHasher[i].out;
 
     inNullifierHasher[i] = Poseidon(3);
@@ -75,9 +82,7 @@ template Transaction(levels, nIns, nOuts) {
     checkRoot[i] = ForceEqualIfEnabled();
     checkRoot[i].in[0] <== inRoot;
     checkRoot[i].in[1] <== inTree[i].root;
-    checkRoot[i].enabled <== inAmount[i];
-
-    inTotal += inAmount[i];
+    checkRoot[i].enabled <== nonzero;
 
     // Verify there are no duplicate nullifiers
     // TODO: If the contract checks nullifiers aren't spent (and progressively sets them while checking), 
@@ -92,14 +97,20 @@ template Transaction(levels, nIns, nOuts) {
   }
 
   for (var i = 0; i < nOuts; i++) {
-    outCommitmentHasher[i] = Poseidon(3);
-    outCommitmentHasher[i].inputs[0] <== outAmount[i];
-    outCommitmentHasher[i].inputs[1] <== outPubkey[i];
-    outCommitmentHasher[i].inputs[2] <== outBlinding[i];
+    outCommitmentHasher[i] = Poseidon(nTokens+2);
+    for (var t = 0; t < nTokens; t++) {
+      outCommitmentHasher[i].inputs[t] <== outAmount[i][t];
+      outTotals[t] += outAmount[i][t];
+    }
+    outCommitmentHasher[i].inputs[nTokens] <== outPubkey[i];
+    outCommitmentHasher[i].inputs[nTokens+1] <== outBlinding[i];
 
     outCommitment[i] === outCommitmentHasher[i].out;
-    outTotal += outAmount[i];
   }
 
-  inTotal + withdrawAmount === outTotal;
+  // TODO: Add withdraw logic
+  for (var t = 0; t < nTokens; t++) {
+    inTotals[t] === outTotals[t];
+  }
+  //inTotal + withdrawAmount === outTotal;
 }

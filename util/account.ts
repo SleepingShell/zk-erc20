@@ -2,6 +2,7 @@ import { HashFunction } from "@zk-kit/incremental-merkle-tree";
 import { decrypt, encrypt, EthEncryptedData, getEncryptionPublicKey } from "@metamask/eth-sig-util";
 
 import { randomBytes32, hash } from "./utils";
+import { MAX_TOKEN_TYPES, VERSION } from "./constants";
 
 import {
   encodeAddress,
@@ -13,7 +14,7 @@ import {
 } from "./encoding";
 import { randomBytes } from "crypto";
 
-const VERSION = "x25519-xsalsa20-poly1305";
+const blank_amounts = new Array<bigint>(MAX_TOKEN_TYPES).fill(0n);
 
 export class Account {
   privateKey: bigint;
@@ -70,7 +71,7 @@ export class Account {
    *
    * @returns The commitment, blinding and encrypted data
    */
-  generateAndEncryptCommitment(amount: bigint): UtxoOutput {
+  generateAndEncryptCommitment(amount: bigint[]): UtxoOutput {
     const blinding = randomBytes32();
     const commitment = generateCommitment(amount, this.publicKey, blinding);
     const encryptedData = encrypt({
@@ -90,25 +91,36 @@ export class Account {
 
 export function generateZeroUtxoOutput(): UtxoOutput {
   const blinding = randomBytes32();
-  return new UtxoOutput(generateCommitment(0n, 0n, blinding), 0n, blinding, 0n, randomBytes(400).toString("hex"));
+  return new UtxoOutput(
+    generateCommitment(blank_amounts, 0n, blinding),
+    blank_amounts,
+    blinding,
+    0n,
+    randomBytes(400).toString("hex")
+  );
 }
 
-export function generateCommitment(amount: bigint, pubkey: bigint, blinding: bigint): bigint {
-  return hash([amount, pubkey, blinding]);
+export function generateCommitment(amount: bigint[], pubkey: bigint, blinding: bigint): bigint {
+  return hash([...amount, pubkey, blinding]);
 }
 
-export function payToAddress(address: string, amount: bigint): UtxoOutput {
+export function payToAddress(address: string, amount: bigint[]): UtxoOutput {
   return Account.fromAddress(address).generateAndEncryptCommitment(amount);
 }
 
+// Change amount to array. The only method to get a fixed length array is to use tuples.
+// However, we may not care to do that, since it will just result in an invalid proof
 export class Utxo {
   commitment: bigint;
-  amount: bigint;
+  amount: bigint[];
   blinding: bigint;
   index: bigint;
   nullifier: bigint;
 
-  constructor(commitment: bigint, amount: bigint, blinding: bigint = 0n, index: bigint = -1n) {
+  constructor(commitment: bigint, amount: bigint[], blinding: bigint = 0n, index: bigint = -1n) {
+    if (amount.length != MAX_TOKEN_TYPES) {
+      throw Error("Must have the correct number of amounts");
+    }
     this.commitment = commitment;
     this.amount = amount;
     this.blinding = blinding;
@@ -138,7 +150,7 @@ export class UtxoOutput extends Utxo {
   pubkey: bigint;
   encryptedData: string;
 
-  constructor(commitment: bigint, amount: bigint, blinding: bigint, pubkey: bigint, encryptedData: string) {
+  constructor(commitment: bigint, amount: bigint[], blinding: bigint, pubkey: bigint, encryptedData: string) {
     super(commitment, amount, blinding);
     this.pubkey = pubkey;
     this.encryptedData = encryptedData;
@@ -148,7 +160,7 @@ export class UtxoOutput extends Utxo {
 export class UtxoWithKey extends Utxo {
   privateKey: bigint;
 
-  constructor(commitment: bigint, amount: bigint, blinding: bigint, index: bigint, privateKey: bigint) {
+  constructor(commitment: bigint, amount: bigint[], blinding: bigint, index: bigint, privateKey: bigint) {
     super(commitment, amount, blinding, index);
     this.privateKey = privateKey;
     super.setNullifier(privateKey);

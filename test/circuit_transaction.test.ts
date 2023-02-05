@@ -15,7 +15,7 @@ describe("Circuit: Transaction", async () => {
     const tree = await buildMerkleTree(20);
     const a = new Account();
     const b = new Account();
-    const amount = 100n;
+    const amount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const inUtxo = payToAddress(a.getAddress(), amount);
     const outUtxo = payToAddress(b.getAddress(), amount);
     inUtxo.setIndex(0n);
