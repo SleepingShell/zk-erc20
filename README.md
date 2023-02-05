@@ -68,8 +68,9 @@ A user deposits by creating a transaction with 0-value commitments.
 - [x] Convert BigNumbers to either string or BigInt (?)
 - [x] Move functions out of account class
   - Shouldn't require having to build Poseidon multiple times
-- [ ] Add address field to commitments to support multiple tokens
-  - Circuit must either only allow 1 token to be transferred at a time, or need to constrain amount per token type instead of for the entire computation
+- [x] Add address field to commitments to support multiple tokens
+- [ ] Research Poseidon > 16 inputs. Or must do multiple Poseidons and then output hash into the commitment
+- [ ] Typescript util should accept a map of token addresses to values, and then order the array in utxo accordingly
 
 ## Future Work
 

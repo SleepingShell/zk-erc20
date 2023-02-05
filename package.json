@@ -10,7 +10,7 @@
     "build": "npm run compile:circuits && npm run compile",
     "clean": "hardhat clean",
     "clean:circuits": "rm -rf build && rm contracts/*_Verifier.sol",
-    "clean:types": "rm -rf typechain-types",
+    "clean:types": "rm -rf types",
     "compile": "hardhat compile",
     "compile:circuits": "shield compile",
     "debug": "shield debug",
