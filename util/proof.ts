@@ -43,7 +43,7 @@ type DepositProofInput = {
 
 export async function transactionProof(
   tree: MerkleTree,
-  withdrawAmount: bigint,
+  withdrawAmount: bigint[],
   inputs: UtxoWithKey[],
   outputs: UtxoOutput[]
 ): Promise<TransactionArgsStruct> {
@@ -107,7 +107,7 @@ export async function transactionProof(
 
 type TransactionProofInput = {
   inRoot: bigint;
-  withdrawAmount: bigint;
+  withdrawAmount: bigint[];
   inNullifier: bigint[];
   outCommitment: bigint[];
 

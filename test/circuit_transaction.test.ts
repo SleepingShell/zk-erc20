@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { expect } from "chai";
 
-import { Account, payToAddress, Utxo } from "../util/account";
+import { Account, blank_amounts, payToAddress, Utxo } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 import { buildMerkleTree } from "../util/merkleProof";
 
@@ -40,7 +40,7 @@ describe("Circuit: Transaction", async () => {
       inRoot: merkleProof.root,
       outCommitment: [outUtxo.commitment],
       inNullifier: [inUtxo.nullifier],
-      withdrawAmount: 0,
+      withdrawAmount: blank_amounts,
     };
 
     const wc = await buildWC(transactionCircuit);

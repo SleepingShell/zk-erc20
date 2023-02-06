@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0;
 
 import "@zk-kit/incremental-merkle-tree.sol/IncrementalBinaryTree.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVerifier {
   function verifyProof(bytes memory proof, uint[] memory pubSignals)
@@ -11,6 +13,7 @@ interface IVerifier {
 
 contract zkERC20 {
   using IncrementalBinaryTree for IncrementalTreeData;
+  using SafeERC20 for IERC20;
 
   uint256 constant MAX_TOKENS = 10;
 
@@ -18,16 +21,18 @@ contract zkERC20 {
   event Deposit(address indexed sender, uint256 commitment, uint256 index, bytes encryptedData);
   event Commitment(uint256 commitment, uint256 index, bytes encryptedData);
 
+  error MaxTokensAdded();
+
   IncrementalTreeData public tree;
   IVerifier depositVerifier;
   
   mapping(uint256 => bool) nullifiers;
-
   /// @dev Because the commitment tree is append-only, we only need to confirm that a user's tx uses ANY
   ///       valid root. Not necessairly the latest one
   mapping(uint256 => bool) public isValidCommitmentRoot;
-
   mapping(uint256 => IVerifier) public verifiers;
+
+  IERC20[] public tokens;
 
   struct DepositArgs {
     uint256[MAX_TOKENS] depositAmount;
@@ -38,7 +43,7 @@ contract zkERC20 {
 
   struct TransactionArgs {
     uint256 root;
-    uint256 withdrawAmount;
+    uint256[MAX_TOKENS] withdrawAmount;
     uint256[] inNullifiers;
     uint256[] outCommitments;
     bytes[] encryptedOutputs;
@@ -59,8 +64,15 @@ contract zkERC20 {
     verifiers[getEncodedVerifierLookup(numInputs, numOutputs)] = verifier;
   }
 
+  /// @notice This function does NOT check if this token has already been added!
+  function addToken(IERC20 token) external {
+    if (tokens.length == MAX_TOKENS) {
+      revert MaxTokensAdded();
+    }
+    tokens.push(token);
+  }
+
   function deposit(DepositArgs calldata args) external {
-    //TODO: Verify payed amount and args.depositAmount match
     //TODO: Reentrancy
     uint256[] memory publicSignals = new uint256[](2+MAX_TOKENS);
     publicSignals[0] = args.outCommitments[0];
@@ -81,6 +93,13 @@ contract zkERC20 {
 
     emit Deposit(msg.sender, args.outCommitments[0], x-2, args.encryptedOutputs[0]);
     emit Deposit(msg.sender, args.outCommitments[1], x-1, args.encryptedOutputs[1]);
+
+    for (uint i = 0; i < MAX_TOKENS; i++) {
+      uint amt = args.depositAmount[i];
+      if (amt != 0) {
+        tokens[i].safeTransferFrom(msg.sender, address(this), amt);
+      }
+    }
   }
 
   function transact(TransactionArgs calldata args) external {
@@ -91,12 +110,18 @@ contract zkERC20 {
     IVerifier verifier = verifiers[getEncodedVerifierLookup(numInputs, numOutputs)];
     require(address(verifier) != address(0), 'Unsupported tx format');
 
-    uint256[] memory publicSignals = new uint256[](2 + numInputs + numOutputs);
+    uint i;
+    uint256[] memory publicSignals = new uint256[](2 + numInputs + numOutputs + MAX_TOKENS);
     publicSignals[0] = args.root;
-    publicSignals[1] = args.withdrawAmount;
+    while (i < MAX_TOKENS) {
+      publicSignals[i+1] = args.withdrawAmount[i];
+      unchecked {
+        i++;
+      }
+    }
 
     uint nullifier;
-    uint i;
+    i = 0;
     while (i < numInputs) {
       nullifier = args.inNullifiers[i];
       require(!nullifiers[nullifier], 'Double spend');
@@ -119,14 +144,6 @@ contract zkERC20 {
     }
 
     require(verifier.verifyProof(args.proof, publicSignals));
-
-    if (args.withdrawAmount > 0) {
-      // TODO: Transfer withdrawn amount.
-      // In order to preserve privacy while transacting but not withdrawing with various tokens, there will
-      // need to be a public input of the address of the token being withdrawn. The circuit will need to
-      // confirm that the spent utxo is of the same token type. However, when there is no public withdraw,
-      // we still need to verify token addresses match while keeping the input private
-    }
   }
 
 

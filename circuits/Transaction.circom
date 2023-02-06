@@ -34,7 +34,7 @@ template Transaction(levels, nIns, nOuts, nTokens) {
 
   // public signals
   signal input inRoot;
-  signal input withdrawAmount;
+  signal input withdrawAmount[nTokens];
   signal input inNullifier[nIns];
   signal input outCommitment[nOuts];
 
@@ -108,9 +108,7 @@ template Transaction(levels, nIns, nOuts, nTokens) {
     outCommitment[i] === outCommitmentHasher[i].out;
   }
 
-  // TODO: Add withdraw logic
   for (var t = 0; t < nTokens; t++) {
-    inTotals[t] === outTotals[t];
+    inTotals[t] === outTotals[t] + withdrawAmount[t];
   }
-  //inTotal + withdrawAmount === outTotal;
 }
