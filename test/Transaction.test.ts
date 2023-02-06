@@ -2,8 +2,8 @@ import { plonk } from "snarkjs";
 
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { DepositVerifier, ZkERC20 } from "../types";
-import { Account, generateZeroUtxoOutput, payToAddress } from "../util/account";
+import { DepositVerifier, MockERC20, ZkERC20 } from "../types";
+import { Account, blank_amounts, generateZeroUtxoOutput, payToAddress } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof, transactionProof } from "../util/proof";
 
@@ -12,6 +12,7 @@ import { CommitmentEvent, DepositEvent } from "../types/contracts/ZkERC20";
 import { poseidonContract as poseidonContract } from "circomlibjs";
 import { MerkleTree } from "../util/merkleProof";
 import { hash } from "../util/utils";
+import { BigNumber } from "ethers";
 
 describe("Transaction proving and verification", async () => {
   const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
@@ -20,6 +21,7 @@ describe("Transaction proving and verification", async () => {
   let user1, user2: SignerWithAddress;
   let verifier: DepositVerifier;
   let zkerc20: ZkERC20;
+  let token1: MockERC20;
 
   const deployVerifiers = async (zkerc20: ZkERC20) => {
     const tx1x1 = (await (await ethers.getContractFactory("Transaction1x1Verifier")).deploy()).address;
@@ -56,6 +58,11 @@ describe("Transaction proving and verification", async () => {
     });
     zkerc20 = (await zkerc20Factory.deploy(20, 0, verifier.address)) as ZkERC20;
     await deployVerifiers(zkerc20);
+
+    token1 = (await (await ethers.getContractFactory("MockERC20")).deploy("Mock", "MCK")) as MockERC20;
+    await token1.mint(user1.address, BigNumber.from(10).pow(18));
+    await token1.connect(user1).approve(zkerc20.address, BigNumber.from(2).pow(255));
+    await zkerc20.addToken(token1.address);
   });
 
   it("Verifier contract", async () => {
@@ -149,7 +156,7 @@ describe("Transaction proving and verification", async () => {
     const output3 = payToAddress(address2, amount3);
     const output4 = payToAddress(address1, amount4);
 
-    const txArgs = await transactionProof(tree, 0n, [txInput], [output3, output4]);
+    const txArgs = await transactionProof(tree, blank_amounts, [txInput], [output3, output4]);
 
     await zkerc20.transact(txArgs);
     const txFilter = zkerc20.filters.Commitment();

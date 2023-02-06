@@ -126,7 +126,7 @@ contract zkERC20 {
       nullifier = args.inNullifiers[i];
       require(!nullifiers[nullifier], 'Double spend');
       nullifiers[nullifier] = true;
-      publicSignals[i+2] = nullifier;
+      publicSignals[i+1+MAX_TOKENS] = nullifier;
       unchecked {
         i++;
       }
@@ -135,7 +135,7 @@ contract zkERC20 {
     i = 0;
     while (i < numOutputs) {
       nullifier = args.outCommitments[i]; //reuse nullifier memory locatin
-      publicSignals[i+2+numInputs] = nullifier;
+      publicSignals[i+1+MAX_TOKENS+numInputs] = nullifier;
       tree.insert(nullifier);
       emit Commitment(nullifier, tree.numberOfLeaves, args.encryptedOutputs[i]);
       unchecked {
