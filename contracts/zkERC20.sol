@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@zk-kit/incremental-merkle-tree.sol/IncrementalBinaryTree.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IVerifier {
   function verifyProof(bytes memory proof, uint[] memory pubSignals)
@@ -11,7 +12,7 @@ interface IVerifier {
     returns (bool);
   }
 
-contract zkERC20 {
+contract zkERC20 is Ownable {
   using IncrementalBinaryTree for IncrementalTreeData;
   using SafeERC20 for IERC20;
 
@@ -60,13 +61,12 @@ contract zkERC20 {
     depositVerifier = _depositVerifier;
   }
 
-  // TODO: Protect function
-  function addVerifier(uint256 numInputs, uint256 numOutputs, IVerifier verifier) external {
+  function addVerifier(uint256 numInputs, uint256 numOutputs, IVerifier verifier) external onlyOwner {
     verifiers[getEncodedVerifierLookup(numInputs, numOutputs)] = verifier;
   }
 
   /// @notice This function does NOT check if this token has already been added!
-  function addToken(IERC20 token) external {
+  function addToken(IERC20 token) external onlyOwner {
     if (tokens.length == MAX_TOKENS) {
       revert MaxTokensAdded();
     }
@@ -74,27 +74,25 @@ contract zkERC20 {
   }
 
   function deposit(DepositArgs calldata args) external {
-    //TODO: Reentrancy
+    // Verify proof
     uint256[] memory publicSignals = new uint256[](2+MAX_TOKENS);
     publicSignals[0] = args.outCommitments[0];
     publicSignals[1] = args.outCommitments[1];
     for (uint i = 0; i < MAX_TOKENS; i++) {
       publicSignals[2+i] = args.depositAmount[i];
     }
-
     require(depositVerifier.verifyProof(args.proof, publicSignals));
 
+    // Insert new commitments into tree
     // Checking if commits exist would be for safety, but if not then sender can lose money
     tree.insert(args.outCommitments[0]);
     tree.insert(args.outCommitments[1]);
-
     isValidCommitmentRoot[tree.root] = true;
-
     uint256 x = tree.numberOfLeaves;
-
     emit Deposit(msg.sender, args.outCommitments[0], x-2, args.encryptedOutputs[0]);
     emit Deposit(msg.sender, args.outCommitments[1], x-1, args.encryptedOutputs[1]);
 
+    // Take tokens from sender
     for (uint i = 0; i < MAX_TOKENS; i++) {
       uint amt = args.depositAmount[i];
       if (amt != 0) {
