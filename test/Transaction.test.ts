@@ -13,7 +13,7 @@ import { poseidonContract as poseidonContract } from "circomlibjs";
 import { MerkleTree } from "../util/merkleProof";
 import { hash } from "../util/utils";
 import { BigNumber } from "ethers";
-import { zeroOutput, zero_amounts } from "../util/utxo";
+import { addTokenToMap, UtxoOutput, zeroOutput, zeroAmounts } from "../util/utxo";
 
 describe("Transaction proving and verification", async () => {
   const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
@@ -24,6 +24,7 @@ describe("Transaction proving and verification", async () => {
   let verifier: DepositVerifier;
   let zkerc20: ZkERC20;
   let token1: MockERC20;
+  let token2: MockERC20;
 
   const deployVerifiers = async (zkerc20: ZkERC20) => {
     const tx1x1 = (await (await ethers.getContractFactory("Transaction1x1Verifier")).deploy()).address;
@@ -62,9 +63,17 @@ describe("Transaction proving and verification", async () => {
     await deployVerifiers(zkerc20);
 
     token1 = (await (await ethers.getContractFactory("MockERC20")).deploy("Mock", "MCK")) as MockERC20;
+    token2 = (await (await ethers.getContractFactory("MockERC20")).deploy("Mock2", "MCK2")) as MockERC20;
     await token1.mint(user1.address, BigNumber.from(10).pow(18));
     await token1.connect(user1).approve(zkerc20.address, BigNumber.from(2).pow(255));
+    await token2.mint(user1.address, BigNumber.from(10).pow(18));
+    await token2.connect(user1).approve(zkerc20.address, BigNumber.from(2).pow(255));
+
     await zkerc20.addToken(token1.address);
+    await zkerc20.addToken(token2.address);
+
+    addTokenToMap(token1.address, 0);
+    addTokenToMap(token2.address, 1);
   });
 
   it("Verifier contract", async () => {
@@ -155,7 +164,7 @@ describe("Transaction proving and verification", async () => {
     const output3 = account2.payRaw(amount3);
     const output4 = account1.payRaw(amount4);
 
-    const txArgs = await transactionProof(tree, zero_amounts, [txInput], [output3, output4]);
+    const txArgs = await transactionProof(tree, zeroAmounts(), [txInput], [output3, output4]);
 
     await zkerc20.transact(txArgs);
     const txFilter = zkerc20.filters.Commitment();
@@ -201,5 +210,68 @@ describe("Transaction proving and verification", async () => {
     await zkerc20.transact(txArgs);
 
     expect((await token1.balanceOf(user1.address)).sub(bal)).eq(depositAmount[0]);
+  });
+
+  it("Multiple token transaction", async () => {
+    const tree = new MerkleTree(20, hash);
+    const account1 = new Account();
+    const amount1 = 1000n;
+    const amount2 = 200n;
+    const bal1before = await token1.balanceOf(user1.address);
+    const bal2before = await token2.balanceOf(user1.address);
+
+    const output1 = new UtxoOutput(account1.getAddress());
+    output1.setTokenAmount(token1.address, amount1);
+    output1.setTokenAmount(token2.address, amount2);
+    output1.finalize();
+    const output2 = zeroOutput();
+
+    const depositArgs = await depositProof(output1.amounts, [output1, output2]);
+    await zkerc20.deposit(depositArgs);
+
+    const bal1after = await token1.balanceOf(user1.address);
+    const bal2after = await token2.balanceOf(user1.address);
+    expect(bal1after).eq(bal1before.sub(amount1));
+    expect(bal2after).eq(bal2before.sub(amount2));
+
+    const depositFilter = zkerc20.filters.Deposit(null);
+    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
+
+    const toAdd: Map<bigint, bigint> = new Map();
+    for (let event of events) {
+      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
+      account1.attemptDecryptAndAdd(
+        event.args.commitment.toBigInt(),
+        event.args.encryptedData,
+        event.args.index.toBigInt()
+      );
+    }
+    const sorted = [...toAdd].sort();
+    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+
+    const withdraw1 = 600n;
+    const withdraw2 = 200n;
+
+    const output3 = account1.pay(
+      {
+        token: token1.address,
+        amount: amount1 - withdraw1,
+      },
+      {
+        token: token2.address,
+        amount: amount2 - withdraw2,
+      }
+    );
+
+    const txArgs = await transactionProof(
+      tree,
+      [withdraw1, withdraw2, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n],
+      [account1.getInput(0)],
+      [output3]
+    );
+    await zkerc20.transact(txArgs);
+
+    expect(await token1.balanceOf(user1.address)).eq(bal1after.add(withdraw1));
+    expect(await token2.balanceOf(user1.address)).eq(bal2after.add(withdraw2));
   });
 });

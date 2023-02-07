@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { Account } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 import { buildMerkleTree } from "../util/merkleProof";
-import { UtxoInput, zero_amounts } from "../util/utxo";
+import { UtxoInput, zeroAmounts } from "../util/utxo";
 
 const buildWC = require("../build/Transaction1x1/Transaction1x1_js/witness_calculator.js");
 //import { builder as buildWC } from "../build/Transaction/Transaction_js/witness_calculator.js";
@@ -41,7 +41,7 @@ describe("Circuit: Transaction", async () => {
       inRoot: merkleProof.root,
       outCommitment: [outUtxo.commitment],
       inNullifier: [inUtxo.nullifier],
-      withdrawAmount: zero_amounts,
+      withdrawAmount: zeroAmounts(),
     };
 
     const wc = await buildWC(transactionCircuit);

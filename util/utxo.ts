@@ -6,7 +6,18 @@ import { randomBytes } from "crypto";
 
 // Helper for determining where a token is in the array of amounts
 const token_map: Map<string, number> = new Map();
-export const zero_amounts = new Array<bigint>(MAX_TOKENS).fill(0n);
+
+export function addTokenToMap(token: string, index: number) {
+  if (token_map.get(token) != undefined) {
+    if (token_map.get(token) != index) {
+      throw Error("Changing already existing token index");
+    }
+  }
+  token_map.set(token, index);
+}
+
+const zero_amounts = new Array<bigint>(MAX_TOKENS).fill(0n);
+export const zeroAmounts = () => [...zero_amounts];
 
 export type TokenAmount = { token: string; amount: bigint };
 
@@ -58,7 +69,7 @@ export class UtxoOutput {
 
   isFinalized: boolean;
 
-  constructor(address: string, amounts: bigint[] = zero_amounts) {
+  constructor(address: string, amounts: bigint[] = zeroAmounts()) {
     if (amounts.length != MAX_TOKENS && amounts.length != 0) {
       throw Error("Amount array has incorrect length");
     }
