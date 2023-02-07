@@ -14,7 +14,7 @@ The [SHIELD framework](https://github.com/xorddotcom/SHIELD) sets up an easy env
 
 The above mentioned projects all share a similar framework in how they achieve private transfers of currency. The core principle of these systems is the private link between **commitments** and **nullifiers**. These two structures have a 1-to-1 relationship, each commitment only has 1 valid nullifier and vice versa. However, revealing a nullifier crucially does **not** reveal which commitment it is linked to.
 
-A commitment _commits_ the UTXO to a specified amount and public key.
+A commitment _commits_ the UTXO to specified amounts and public key.
 A nullifier _nullifies_ the commitment it is linked to so that it cannot be double-spent.
 
 Commitments are stored in a cryptographic accumulator in which we can prove membership (merkle tree). The root of this merkle tree is stored on-chain.
@@ -40,6 +40,8 @@ If we want to spend an input UTXO (commitment) and generate a new output UTXO, w
 
 We can prove 1,3,4 in a zero-knowledge proof. This will allow us to hide which input commitment is being spent, and who the new output commitment is destined for.
 2 is proven on-chain simply by checking if the nullifier exists in the set of nullifiers.
+
+A UTXO can contain value of multiple tokens. All commitments are generated with an array of MAX_TOKENS values.
 
 Ideally, there would be a set accumulator that allows us to prove nonmembership of the set for accumulators. This would allow us to prove the entire transaction in zero knowledge. At first, sparse merkle trees seems like an ideal solution for this. However, the problem of synchronity arises.
 
@@ -70,7 +72,6 @@ A user deposits by creating a transaction with 0-value commitments.
   - Shouldn't require having to build Poseidon multiple times
 - [x] Add address field to commitments to support multiple tokens
 - [ ] Research Poseidon > 16 inputs. Or must do multiple Poseidons and then output hash into the commitment
-- [ ] Typescript util should accept a map of token addresses to values, and then order the array in utxo accordingly
 
 ## Future Work
 
