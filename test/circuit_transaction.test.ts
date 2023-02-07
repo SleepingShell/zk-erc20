@@ -1,9 +1,10 @@
 import { readFileSync } from "fs";
 import { expect } from "chai";
 
-import { Account, blank_amounts, payToAddress, Utxo } from "../util/account";
+import { Account } from "../util/account";
 import { randomBytes32 } from "../util/utils";
 import { buildMerkleTree } from "../util/merkleProof";
+import { UtxoInput, zero_amounts } from "../util/utxo";
 
 const buildWC = require("../build/Transaction1x1/Transaction1x1_js/witness_calculator.js");
 //import { builder as buildWC } from "../build/Transaction/Transaction_js/witness_calculator.js";
@@ -15,32 +16,32 @@ describe("Circuit: Transaction", async () => {
     const tree = await buildMerkleTree(20);
     const a = new Account();
     const b = new Account();
-    const amount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
-    const inUtxo = payToAddress(a.getAddress(), amount);
-    const outUtxo = payToAddress(b.getAddress(), amount);
-    inUtxo.setIndex(0n);
-    outUtxo.setIndex(1n);
-    inUtxo.setNullifier(a.privateKey);
+    const amounts = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+
+    const t = a.payRaw(amounts);
+    t.finalize();
+    const inUtxo = UtxoInput.fromOutput(t, 0n, a.privateKey);
+    const outUtxo = b.payRaw(amounts);
 
     tree.addLeaves([inUtxo.commitment]);
     const merkleProof = tree.merkleProof(0);
 
     const input = {
       inCommitment: [inUtxo.commitment],
-      inAmount: [amount],
+      inAmount: [amounts],
       inBlinding: [inUtxo.blinding],
       inPathIndices: [merkleProof.pathIndices],
       inPathElements: [merkleProof.siblings],
       inPrivateKey: [a.privateKey],
 
-      outAmount: [amount],
+      outAmount: [amounts],
       outPubkey: [b.publicKey],
       outBlinding: [outUtxo.blinding],
 
       inRoot: merkleProof.root,
       outCommitment: [outUtxo.commitment],
       inNullifier: [inUtxo.nullifier],
-      withdrawAmount: blank_amounts,
+      withdrawAmount: zero_amounts,
     };
 
     const wc = await buildWC(transactionCircuit);
