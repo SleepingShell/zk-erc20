@@ -22,6 +22,7 @@ contract zkERC20 {
   event Commitment(uint256 commitment, uint256 index, bytes encryptedData);
 
   error MaxTokensAdded();
+  error DoubleSpend(uint256);
 
   IncrementalTreeData public tree;
   IVerifier depositVerifier;
@@ -124,7 +125,9 @@ contract zkERC20 {
     i = 0;
     while (i < numInputs) {
       nullifier = args.inNullifiers[i];
-      require(!nullifiers[nullifier], 'Double spend');
+      if (nullifiers[nullifier]) {
+        revert DoubleSpend(nullifier);
+      }
       nullifiers[nullifier] = true;
       publicSignals[i+1+MAX_TOKENS] = nullifier;
       unchecked {
@@ -142,8 +145,19 @@ contract zkERC20 {
         i++;
       }
     }
-
     require(verifier.verifyProof(args.proof, publicSignals));
+
+    i = 0;
+    while (i < MAX_TOKENS) {
+      uint amt = args.withdrawAmount[i];
+      if (amt != 0) {
+        tokens[i].safeTransfer(msg.sender, amt);
+      }
+
+      unchecked {
+        i++;
+      }
+    }
   }
 
 

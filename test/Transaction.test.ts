@@ -19,7 +19,8 @@ describe("Transaction proving and verification", async () => {
   const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
   const depositCircuitKeyPath = "build/Deposit/Deposit.zkey";
 
-  let user1, user2: SignerWithAddress;
+  let user1: SignerWithAddress;
+  let user2: SignerWithAddress;
   let verifier: DepositVerifier;
   let zkerc20: ZkERC20;
   let token1: MockERC20;
@@ -94,8 +95,6 @@ describe("Transaction proving and verification", async () => {
   it("Deposit contract", async () => {
     const account1 = new Account();
     const account2 = new Account();
-    const address1 = account1.getAddress();
-    const address2 = account2.getAddress();
     const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
@@ -115,14 +114,13 @@ describe("Transaction proving and verification", async () => {
     expect(events[0].args.commitment).eq(output1.commitment);
     expect(events[1].args.index).eq(1);
     expect(events[1].args.commitment).eq(output2.commitment);
+    expect(await token1.balanceOf(zkerc20.address)).eq(300);
   });
 
   it("Transaction contract", async () => {
     const tree = new MerkleTree(20, hash);
     const account1 = new Account();
     const account2 = new Account();
-    const address1 = account1.getAddress();
-    const address2 = account2.getAddress();
 
     const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const output1 = account1.payRaw(depositAmount);
@@ -166,6 +164,42 @@ describe("Transaction proving and verification", async () => {
       console.log(event.args);
     }
 
-    await expect(zkerc20.transact(txArgs)).revertedWith("Double spend");
+    await expect(zkerc20.transact(txArgs)).revertedWithCustomError(zkerc20, "DoubleSpend").withArgs(txInput.nullifier);
+  });
+
+  it("Withdraw from contract", async () => {
+    const tree = new MerkleTree(20, hash);
+    const account1 = new Account();
+
+    const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
+    const output1 = account1.payRaw(depositAmount);
+    const output2 = zeroOutput();
+
+    const depositArgs = await depositProof(depositAmount, [output1, output2]);
+    await zkerc20.deposit(depositArgs);
+
+    const depositFilter = zkerc20.filters.Deposit(null);
+    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
+
+    const toAdd: Map<bigint, bigint> = new Map();
+    for (let event of events) {
+      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
+      account1.attemptDecryptAndAdd(
+        event.args.commitment.toBigInt(),
+        event.args.encryptedData,
+        event.args.index.toBigInt()
+      );
+    }
+
+    const sorted = [...toAdd].sort();
+    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+
+    const output3 = zeroOutput();
+    const txArgs = await transactionProof(tree, depositAmount, [account1.getInput(0)], [output3]);
+
+    const bal = await token1.balanceOf(user1.address);
+    await zkerc20.transact(txArgs);
+
+    expect((await token1.balanceOf(user1.address)).sub(bal)).eq(depositAmount[0]);
   });
 });
