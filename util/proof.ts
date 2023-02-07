@@ -1,8 +1,8 @@
 import { plonk } from "snarkjs";
 
 import { ZkERC20 } from "../types/contracts/ZkERC20.sol";
-import { UtxoOutput, UtxoWithKey } from "./account";
 import { MerkleProof, MerkleTree } from "./merkleProof";
+import { UtxoInput, UtxoOutput } from "./utxo";
 type DepositArgsStruct = ZkERC20.DepositArgsStruct;
 type TransactionArgsStruct = ZkERC20.TransactionArgsStruct;
 
@@ -11,8 +11,8 @@ const depositCircuitKeyPath = "build/Deposit/Deposit.zkey";
 
 export async function depositProof(depositAmount: bigint[], outputs: UtxoOutput[]): Promise<DepositArgsStruct> {
   const input: DepositProofInput = {
-    outAmounts: [outputs[0].amount, outputs[1].amount],
-    outPubkeys: [outputs[0].pubkey, outputs[1].pubkey],
+    outAmounts: [outputs[0].amounts, outputs[1].amounts],
+    outPubkeys: [outputs[0].publicKey, outputs[1].publicKey],
     outBlindings: [outputs[0].blinding, outputs[1].blinding],
     outCommitments: [outputs[0].commitment, outputs[1].commitment],
     depositAmount: depositAmount,
@@ -44,7 +44,7 @@ type DepositProofInput = {
 export async function transactionProof(
   tree: MerkleTree,
   withdrawAmount: bigint[],
-  inputs: UtxoWithKey[],
+  inputs: UtxoInput[],
   outputs: UtxoOutput[]
 ): Promise<TransactionArgsStruct> {
   const proofInput: TransactionProofInput = {
@@ -71,7 +71,7 @@ export async function transactionProof(
     mProof = tree.merkleProof(Number(input.index));
 
     proofInput.inCommitment.push(input.commitment);
-    proofInput.inAmount.push(input.amount);
+    proofInput.inAmount.push(input.amounts);
     proofInput.inBlinding.push(input.blinding);
     proofInput.inPathIndices.push(mProof.pathIndices);
     proofInput.inPathElements.push(mProof.siblings);
@@ -81,8 +81,8 @@ export async function transactionProof(
 
   const encryptedOutputs: string[] = [];
   for (const output of outputs) {
-    proofInput.outAmount.push(output.amount);
-    proofInput.outPubkey.push(output.pubkey);
+    proofInput.outAmount.push(output.amounts);
+    proofInput.outPubkey.push(output.publicKey);
     proofInput.outBlinding.push(output.blinding);
     proofInput.outCommitment.push(output.commitment);
     encryptedOutputs.push("0x" + output.encryptedData);

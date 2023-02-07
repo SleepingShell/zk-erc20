@@ -82,4 +82,8 @@ export class Account {
       this.ownedUtxos.push(utxo);
     } catch (error) {}
   }
+
+  getInput(index: number): UtxoInput {
+    return this.ownedUtxos[index];
+  }
 }

@@ -3,7 +3,7 @@ import { plonk } from "snarkjs";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { DepositVerifier, MockERC20, ZkERC20 } from "../types";
-import { Account, blank_amounts, generateZeroUtxoOutput, payToAddress } from "../util/account";
+import { Account } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof, transactionProof } from "../util/proof";
 
@@ -13,6 +13,7 @@ import { poseidonContract as poseidonContract } from "circomlibjs";
 import { MerkleTree } from "../util/merkleProof";
 import { hash } from "../util/utils";
 import { BigNumber } from "ethers";
+import { zeroOutput, zero_amounts } from "../util/utxo";
 
 describe("Transaction proving and verification", async () => {
   const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
@@ -73,8 +74,8 @@ describe("Transaction proving and verification", async () => {
     const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
-    const output1 = payToAddress(address1, amount1);
-    const output2 = payToAddress(address2, amount2);
+    const output1 = account1.payRaw(amount1);
+    const output2 = account2.payRaw(amount2);
 
     const input = {
       outAmounts: [amount1, amount2],
@@ -98,8 +99,8 @@ describe("Transaction proving and verification", async () => {
     const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
-    const output1 = payToAddress(address1, amount1);
-    const output2 = payToAddress(address2, amount2);
+    const output1 = account1.payRaw(amount1);
+    const output2 = account2.payRaw(amount2);
 
     const args = await depositProof(
       amount1.map((amt, i) => amt + amount2[i]),
@@ -124,8 +125,8 @@ describe("Transaction proving and verification", async () => {
     const address2 = account2.getAddress();
 
     const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
-    const output1 = payToAddress(address1, depositAmount);
-    const output2 = generateZeroUtxoOutput();
+    const output1 = account1.payRaw(depositAmount);
+    const output2 = zeroOutput();
 
     const depositArgs = await depositProof(depositAmount, [output1, output2]);
     await zkerc20.deposit(depositArgs);
@@ -152,11 +153,11 @@ describe("Transaction proving and verification", async () => {
     const amount3 = [50n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount4 = [50n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
-    const txInput = account1.getKeyedUtxo(0);
-    const output3 = payToAddress(address2, amount3);
-    const output4 = payToAddress(address1, amount4);
+    const txInput = account1.getInput(0);
+    const output3 = account2.payRaw(amount3);
+    const output4 = account1.payRaw(amount4);
 
-    const txArgs = await transactionProof(tree, blank_amounts, [txInput], [output3, output4]);
+    const txArgs = await transactionProof(tree, zero_amounts, [txInput], [output3, output4]);
 
     await zkerc20.transact(txArgs);
     const txFilter = zkerc20.filters.Commitment();

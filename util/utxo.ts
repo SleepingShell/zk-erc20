@@ -2,6 +2,7 @@ import { randomBytes32, hash } from "./utils";
 import { decodeAddress, encodeAddress, packCommitment, packEncryptedData } from "./encoding";
 import { MAX_TOKENS, VERSION } from "./constants";
 import { encrypt, getEncryptionPublicKey } from "@metamask/eth-sig-util";
+import { randomBytes } from "crypto";
 
 // Helper for determining where a token is in the array of amounts
 const token_map: Map<string, number> = new Map();
@@ -18,6 +19,7 @@ export class UtxoInput {
   amounts: bigint[];
   blinding: bigint;
   index: bigint;
+  privateKey: bigint;
   nullifier: bigint;
 
   constructor(commitment: bigint, amounts: bigint[], blinding: bigint, index: bigint, privkey: bigint) {
@@ -28,6 +30,7 @@ export class UtxoInput {
     this.amounts = amounts;
     this.blinding = blinding;
     this.index = index;
+    this.privateKey = privkey;
     this.nullifier = this.generateNullifier(privkey);
   }
 
@@ -87,7 +90,7 @@ export class UtxoOutput {
     this.generateCommitment();
     this.isFinalized = true;
     if (!real) {
-      this.encryptedData = "FIXME"; // Calc random data length based on # of tokens
+      this.encryptedData = randomBytes(400).toString("hex"); // FIXME: Calc random data length based on # of tokens
       return;
     }
     this.encryptedData = packEncryptedData(
