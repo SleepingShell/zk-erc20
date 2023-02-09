@@ -2,7 +2,7 @@ import { plonk } from "snarkjs";
 
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { DepositVerifier, MockERC20, ZkERC20 } from "../types";
+import { DepositVerifier, MockERC20, ZkERC20, ZkERC20__factory } from "../types";
 import { Account } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { depositProof, transactionProof } from "../util/proof";
@@ -169,9 +169,11 @@ describe("Transaction proving and verification", async () => {
     await zkerc20.transact(txArgs);
     const txFilter = zkerc20.filters.Commitment();
     const txevents = (await zkerc20.queryFilter(txFilter)) as CommitmentEvent[];
+    /*
     for (let event of txevents) {
       console.log(event.args);
     }
+    */
 
     await expect(zkerc20.transact(txArgs)).revertedWithCustomError(zkerc20, "DoubleSpend").withArgs(txInput.nullifier);
   });
@@ -212,7 +214,7 @@ describe("Transaction proving and verification", async () => {
     expect((await token1.balanceOf(user1.address)).sub(bal)).eq(depositAmount[0]);
   });
 
-  it("Multiple token transaction", async () => {
+  it("Multiple token withdraw", async () => {
     const tree = new MerkleTree(20, hash);
     const account1 = new Account();
     const amount1 = 1000n;
@@ -273,5 +275,42 @@ describe("Transaction proving and verification", async () => {
 
     expect(await token1.balanceOf(user1.address)).eq(bal1after.add(withdraw1));
     expect(await token2.balanceOf(user1.address)).eq(bal2after.add(withdraw2));
+  });
+
+  it.only("Double Spend", async () => {
+    const tree = new MerkleTree(20, hash);
+    const account1 = new Account();
+    const amount1 = 1000n;
+
+    const output1 = account1.pay({ token: token1.address, amount: amount1 });
+    const output2 = zeroOutput();
+
+    const depositArgs = await depositProof(output1.amounts, [output1, output2]);
+    await zkerc20.deposit(depositArgs);
+
+    const depositFilter = zkerc20.filters.Deposit(null);
+    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
+
+    const toAdd: Map<bigint, bigint> = new Map();
+    for (let event of events) {
+      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
+      account1.attemptDecryptAndAdd(
+        event.args.commitment.toBigInt(),
+        event.args.encryptedData,
+        event.args.index.toBigInt()
+      );
+    }
+    const sorted = [...toAdd].sort();
+    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+
+    const input = account1.getInput(0);
+    const output3 = account1.pay({ token: token1.address, amount: amount1 });
+    const output4 = account1.pay({ token: token1.address, amount: amount1 });
+
+    // The circuit will approve that inputs = outputs. However, the smart contract will verify that
+    // the input is being double spent
+    const txArgs = await transactionProof(tree, zeroAmounts(), [input, input], [output3, output4]);
+
+    await expect(zkerc20.transact(txArgs)).revertedWithCustomError(zkerc20, "DoubleSpend");
   });
 });

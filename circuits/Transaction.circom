@@ -44,12 +44,10 @@ template Transaction(levels, nIns, nOuts, nTokens) {
   component inNullifierHasher[nIns];
   component inTree[nIns];
   component checkRoot[nIns];
-  component dupNullifiers[nIns * (nIns - 1) / 2];
-
-  var dupIndex;
 
   var inTotals[nTokens];
   var outTotals[nTokens];
+  
   // Check input commitments + nullifiers are valid
   for (var i = 0; i < nIns; i++) {
     var nonzero; //If this commitment has ANY non-zero value
@@ -83,18 +81,7 @@ template Transaction(levels, nIns, nOuts, nTokens) {
     checkRoot[i].in[0] <== inRoot;
     checkRoot[i].in[1] <== inTree[i].root;
     checkRoot[i].enabled <== nonzero;
-
-    // Verify there are no duplicate nullifiers
-    // TODO: If the contract checks nullifiers aren't spent (and progressively sets them while checking), 
-    //       can we remove this check?
-    for (var j = i+1; j < nIns; j++) {
-      dupNullifiers[dupIndex] = IsEqual();
-      dupNullifiers[dupIndex].in[0] <== inNullifier[i];
-      dupNullifiers[dupIndex].in[1] <== inNullifier[j];
-      dupNullifiers[dupIndex].out === 0;
-      dupIndex++;
-    }
-  }
+  } 
 
   for (var i = 0; i < nOuts; i++) {
     outCommitmentHasher[i] = Poseidon(nTokens+2);
