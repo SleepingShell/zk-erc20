@@ -277,7 +277,7 @@ describe("Transaction proving and verification", async () => {
     expect(await token2.balanceOf(user1.address)).eq(bal2after.add(withdraw2));
   });
 
-  it.only("Double Spend", async () => {
+  it("Double Spend", async () => {
     const tree = new MerkleTree(20, hash);
     const account1 = new Account();
     const amount1 = 1000n;
