@@ -46,5 +46,14 @@ describe("Circuit: Transaction", async () => {
 
     const wc = await buildWC(transactionCircuit);
     await wc.calculateWitness(input, 1);
+
+    const wrongAmounts = Object.assign({}, amounts);
+    wrongAmounts[0] = 200n;
+
+    await expect(wc.calculateWitness(Object.assign({}, input, { outAmount: [wrongAmounts] }), 1)).rejectedWith(Error);
+
+    await expect(
+      wc.calculateWitness(Object.assign({}, input, { withdrawAmount: [1000n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] }), 1)
+    ).rejectedWith(Error);
   });
 });
