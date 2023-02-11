@@ -1,5 +1,4 @@
 import { HashFunction, IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
-import { BigNumber } from "ethers";
 
 import { hash } from "./utils";
 
@@ -14,6 +13,10 @@ export class MerkleTree {
   constructor(levels: number, hash: HashFunction) {
     this.levels = levels;
     this.tree = new IncrementalMerkleTree(hash, this.levels, 0, 2);
+  }
+
+  get numLeaves(): number {
+    return this.tree.leaves.length;
   }
 
   addLeaves(leaves: any[]) {

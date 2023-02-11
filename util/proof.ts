@@ -1,7 +1,7 @@
 import { plonk } from "snarkjs";
 
 import { ZkERC20 } from "../types/contracts/ZkERC20.sol";
-import { MerkleProof, MerkleTree } from "./merkleProof";
+import { MerkleProof, MerkleTree } from "./merkleTree";
 import { UtxoInput, UtxoOutput } from "./utxo";
 type DepositArgsStruct = ZkERC20.DepositArgsStruct;
 type TransactionArgsStruct = ZkERC20.TransactionArgsStruct;

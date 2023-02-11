@@ -14,6 +14,9 @@ export class Account {
 
   ownedUtxos: UtxoInput[];
 
+  // Used to prevent double-adding to ownedUtxos. Pretty hacky
+  addedIndexes: Map<bigint, boolean> = new Map();
+
   constructor(privateKey = randomBytes32()) {
     this.privateKey = privateKey;
     this.publicKey = hash([this.privateKey.toString()]);
@@ -79,7 +82,9 @@ export class Account {
       const packedDecrypted = decrypt({ encryptedData: encryptedData, privateKey: this.privateKey.toString(16) });
       const { amounts, blinding } = unpackCommitment(packedDecrypted);
       const utxo = new UtxoInput(commitment, amounts, blinding, index, this.privateKey);
+      if (this.addedIndexes.get(utxo.index)) return;
       this.ownedUtxos.push(utxo);
+      this.addedIndexes.set(utxo.index, true);
     } catch (error) {}
   }
 

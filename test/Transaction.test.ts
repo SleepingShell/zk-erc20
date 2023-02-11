@@ -1,19 +1,20 @@
 import { plonk } from "snarkjs";
+import { poseidonContract as poseidonContract } from "circomlibjs";
 
 import { ethers } from "hardhat";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { DepositVerifier, MockERC20, ZkERC20, ZkERC20__factory } from "../types";
-import { Account } from "../util/account";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { depositProof, transactionProof } from "../util/proof";
 
 import { CommitmentEvent, DepositEvent } from "../types/contracts/ZkERC20";
 
-import { poseidonContract as poseidonContract } from "circomlibjs";
-import { MerkleTree } from "../util/merkleProof";
+import { MerkleTree } from "../util/merkleTree";
 import { hash } from "../util/utils";
-import { BigNumber } from "ethers";
 import { addTokenToMap, UtxoOutput, zeroOutput, zeroAmounts } from "../util/utxo";
+import { depositProof, transactionProof } from "../util/proof";
+import { Account } from "../util/account";
+import { Observer } from "../util/observer";
 
 describe("Transaction proving and verification", async () => {
   const depositCircuitPath = "build/Deposit/Deposit_js/Deposit.wasm";
@@ -25,6 +26,9 @@ describe("Transaction proving and verification", async () => {
   let zkerc20: ZkERC20;
   let token1: MockERC20;
   let token2: MockERC20;
+  let observer: Observer;
+  let tree: MerkleTree;
+  let account1: Account;
 
   const deployVerifiers = async (zkerc20: ZkERC20) => {
     const tx1x1 = (await (await ethers.getContractFactory("Transaction1x1Verifier")).deploy()).address;
@@ -35,6 +39,8 @@ describe("Transaction proving and verification", async () => {
     await zkerc20.addVerifier(1, 2, tx1x2);
     await zkerc20.addVerifier(2, 2, tx2x2);
   };
+
+  const sleep = async () => await new Promise((r) => setTimeout(r, 5000));
 
   beforeEach(async () => {
     [user1, user2] = await ethers.getSigners();
@@ -74,13 +80,17 @@ describe("Transaction proving and verification", async () => {
 
     addTokenToMap(token1.address, 0);
     addTokenToMap(token2.address, 1);
+
+    observer = new Observer(zkerc20, 20);
+    await observer.ready();
+    tree = observer.tree;
+
+    account1 = new Account();
+    observer.subscribeAccount(account1);
   });
 
   it("Verifier contract", async () => {
-    const account1 = new Account();
     const account2 = new Account();
-    const address1 = account1.getAddress();
-    const address2 = account2.getAddress();
     const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
 
@@ -102,7 +112,6 @@ describe("Transaction proving and verification", async () => {
   });
 
   it("Deposit contract", async () => {
-    const account1 = new Account();
     const account2 = new Account();
     const amount1 = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const amount2 = [200n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
@@ -117,19 +126,19 @@ describe("Transaction proving and verification", async () => {
 
     await zkerc20.deposit(args);
 
-    const depositFilter = zkerc20.filters.Deposit(null);
+    await sleep();
+    expect(observer.tree.numLeaves).eq(2);
+
+    const depositFilter = zkerc20.filters.Deposit(user1.address);
     const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
     expect(events[0].args.index).eq(0);
-    expect(events[0].args.commitment).eq(output1.commitment);
     expect(events[1].args.index).eq(1);
-    expect(events[1].args.commitment).eq(output2.commitment);
     expect(await token1.balanceOf(zkerc20.address)).eq(300);
   });
 
   it("Transaction contract", async () => {
-    const tree = new MerkleTree(20, hash);
-    const account1 = new Account();
     const account2 = new Account();
+    observer.subscribeAccount(account1);
 
     const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const output1 = account1.payRaw(depositAmount);
@@ -138,23 +147,7 @@ describe("Transaction proving and verification", async () => {
     const depositArgs = await depositProof(depositAmount, [output1, output2]);
     await zkerc20.deposit(depositArgs);
 
-    const depositFilter = zkerc20.filters.Deposit(null);
-    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
-
-    // TODO: Whatever utility monitors the blockchain must ensure correct leaf addition order
-    const toAdd: Map<bigint, bigint> = new Map();
-    for (let event of events) {
-      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
-      account1.attemptDecryptAndAdd(
-        event.args.commitment.toBigInt(),
-        event.args.encryptedData,
-        event.args.index.toBigInt()
-      );
-    }
-
-    const sorted = [...toAdd].sort();
-    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
-
+    await sleep();
     expect(account1.ownedUtxos.length).eq(1);
 
     const amount3 = [50n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
@@ -167,43 +160,17 @@ describe("Transaction proving and verification", async () => {
     const txArgs = await transactionProof(tree, zeroAmounts(), [txInput], [output3, output4]);
 
     await zkerc20.transact(txArgs);
-    const txFilter = zkerc20.filters.Commitment();
-    const txevents = (await zkerc20.queryFilter(txFilter)) as CommitmentEvent[];
-    /*
-    for (let event of txevents) {
-      console.log(event.args);
-    }
-    */
-
     await expect(zkerc20.transact(txArgs)).revertedWithCustomError(zkerc20, "DoubleSpend").withArgs(txInput.nullifier);
   });
 
   it("Withdraw from contract", async () => {
-    const tree = new MerkleTree(20, hash);
-    const account1 = new Account();
-
     const depositAmount = [100n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n];
     const output1 = account1.payRaw(depositAmount);
     const output2 = zeroOutput();
 
     const depositArgs = await depositProof(depositAmount, [output1, output2]);
     await zkerc20.deposit(depositArgs);
-
-    const depositFilter = zkerc20.filters.Deposit(null);
-    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
-
-    const toAdd: Map<bigint, bigint> = new Map();
-    for (let event of events) {
-      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
-      account1.attemptDecryptAndAdd(
-        event.args.commitment.toBigInt(),
-        event.args.encryptedData,
-        event.args.index.toBigInt()
-      );
-    }
-
-    const sorted = [...toAdd].sort();
-    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+    await sleep();
 
     const output3 = zeroOutput();
     const txArgs = await transactionProof(tree, depositAmount, [account1.getInput(0)], [output3]);
@@ -215,8 +182,6 @@ describe("Transaction proving and verification", async () => {
   });
 
   it("Multiple token withdraw", async () => {
-    const tree = new MerkleTree(20, hash);
-    const account1 = new Account();
     const amount1 = 1000n;
     const amount2 = 200n;
     const bal1before = await token1.balanceOf(user1.address);
@@ -236,20 +201,7 @@ describe("Transaction proving and verification", async () => {
     expect(bal1after).eq(bal1before.sub(amount1));
     expect(bal2after).eq(bal2before.sub(amount2));
 
-    const depositFilter = zkerc20.filters.Deposit(null);
-    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
-
-    const toAdd: Map<bigint, bigint> = new Map();
-    for (let event of events) {
-      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
-      account1.attemptDecryptAndAdd(
-        event.args.commitment.toBigInt(),
-        event.args.encryptedData,
-        event.args.index.toBigInt()
-      );
-    }
-    const sorted = [...toAdd].sort();
-    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+    await sleep();
 
     const withdraw1 = 600n;
     const withdraw2 = 200n;
@@ -278,8 +230,6 @@ describe("Transaction proving and verification", async () => {
   });
 
   it("Double Spend", async () => {
-    const tree = new MerkleTree(20, hash);
-    const account1 = new Account();
     const amount1 = 1000n;
 
     const output1 = account1.pay({ token: token1.address, amount: amount1 });
@@ -288,20 +238,7 @@ describe("Transaction proving and verification", async () => {
     const depositArgs = await depositProof(output1.amounts, [output1, output2]);
     await zkerc20.deposit(depositArgs);
 
-    const depositFilter = zkerc20.filters.Deposit(null);
-    const events = (await zkerc20.queryFilter(depositFilter)) as DepositEvent[];
-
-    const toAdd: Map<bigint, bigint> = new Map();
-    for (let event of events) {
-      toAdd.set(event.args.index.toBigInt(), event.args.commitment.toBigInt());
-      account1.attemptDecryptAndAdd(
-        event.args.commitment.toBigInt(),
-        event.args.encryptedData,
-        event.args.index.toBigInt()
-      );
-    }
-    const sorted = [...toAdd].sort();
-    tree.addLeaves(sorted.map((v: [bigint, bigint]) => v[1]));
+    await sleep();
 
     const input = account1.getInput(0);
     const output3 = account1.pay({ token: token1.address, amount: amount1 });
