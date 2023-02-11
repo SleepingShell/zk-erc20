@@ -18,23 +18,11 @@ contract zkERC20 is Ownable {
 
   uint256 constant MAX_TOKENS = 10;
 
-  // TODO: If we don't care to allow senders to index their deposits, then we only need thr transaction event
-  event Deposit(address indexed sender, uint256 commitment, uint256 index, bytes encryptedData);
+  event Deposit(address indexed sender, uint256 index);
   event Commitment(uint256 commitment, uint256 index, bytes encryptedData);
-
+  
   error MaxTokensAdded();
   error DoubleSpend(uint256);
-
-  IncrementalTreeData public tree;
-  IVerifier depositVerifier;
-  
-  mapping(uint256 => bool) nullifiers;
-  /// @dev Because the commitment tree is append-only, we only need to confirm that a user's tx uses ANY
-  ///       valid root. Not necessairly the latest one
-  mapping(uint256 => bool) public isValidCommitmentRoot;
-  mapping(uint256 => IVerifier) public verifiers;
-
-  IERC20[] public tokens;
 
   struct DepositArgs {
     uint256[MAX_TOKENS] depositAmount;
@@ -51,6 +39,15 @@ contract zkERC20 is Ownable {
     bytes[] encryptedOutputs;
     bytes proof;
   }
+
+  IncrementalTreeData public tree;
+  IVerifier depositVerifier;
+  
+  mapping(uint256 => bool) nullifiers;
+  mapping(uint256 => bool) public isValidCommitmentRoot;
+  mapping(uint256 => IVerifier) public verifiers;
+
+  IERC20[] public tokens;
 
   constructor(
     uint256 _depth,
@@ -89,8 +86,10 @@ contract zkERC20 is Ownable {
     tree.insert(args.outCommitments[1]);
     isValidCommitmentRoot[tree.root] = true;
     uint256 x = tree.numberOfLeaves;
-    emit Deposit(msg.sender, args.outCommitments[0], x-2, args.encryptedOutputs[0]);
-    emit Deposit(msg.sender, args.outCommitments[1], x-1, args.encryptedOutputs[1]);
+    emit Deposit(msg.sender, x-2);
+    emit Commitment(args.outCommitments[0], x-2, args.encryptedOutputs[0]);
+    emit Deposit(msg.sender, x-1);
+    emit Commitment(args.outCommitments[1], x-1, args.encryptedOutputs[1]);
 
     // Take tokens from sender
     for (uint i = 0; i < MAX_TOKENS; i++) {
