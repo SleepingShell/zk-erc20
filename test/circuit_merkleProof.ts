@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 
-import { buildMerkleTree } from "../util/merkleProof";
+import { buildMerkleTree } from "../util/merkleTree";
 
 import { randomBytes32 } from "../util/utils";
 

@@ -2,8 +2,7 @@ import { readFileSync } from "fs";
 import { expect } from "chai";
 
 import { Account } from "../util/account";
-import { randomBytes32 } from "../util/utils";
-import { buildMerkleTree } from "../util/merkleProof";
+import { buildMerkleTree } from "../util/merkleTree";
 import { UtxoInput, zeroAmounts } from "../util/utxo";
 
 const buildWC = require("../build/Transaction1x1/Transaction1x1_js/witness_calculator.js");
