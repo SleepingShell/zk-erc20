@@ -14,6 +14,8 @@ export class Observer {
   commitmentFilter: CommitmentEventFilter;
   toAdd: CommitmentEventObject[];
 
+  subscribedAccounts: Map<Account, TypedListener<CommitmentEvent>> = new Map();
+
   /**
    * Construct a new contract observer that looks for emitted events for populating the local merkle tree
    * @param contract Instance of the zkERC20 contract
@@ -36,15 +38,28 @@ export class Observer {
   }
 
   subscribeAccount(account: Account) {
-    this.subscribe((e: CommitmentEventObject) => {
+    const listener = this.subscribe((e: CommitmentEventObject) => {
       account.attemptDecryptAndAdd(e.commitment.toBigInt(), e.encryptedData, e.index.toBigInt());
     });
+
+    this.subscribedAccounts.set(account, listener);
+  }
+
+  unsubscribeAccount(account: Account) {
+    const listener = this.subscribedAccounts.get(account);
+    if (listener !== undefined) {
+      this.contract.off(this.commitmentFilter, listener);
+      this.subscribedAccounts.delete(account);
+    }
   }
 
   // TODO: If we want to remove an account, must keep a map of account => EventListener in order to later remove
 
-  private subscribe(callback: (e: CommitmentEventObject) => void) {
-    this.contract.on(this.commitmentFilter, (c, i, d, event) => callback(event.args));
+  private subscribe(callback: (e: CommitmentEventObject) => void): TypedListener<CommitmentEvent> {
+    const listener: TypedListener<CommitmentEvent> = (c, i, d, event) => callback(event.args);
+    this.contract.on(this.commitmentFilter, listener);
+
+    return listener;
   }
 
   private addOnEvent(event: CommitmentEventObject) {
