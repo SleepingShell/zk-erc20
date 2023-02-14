@@ -1,6 +1,11 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-tracer";
+import dotenv from "dotenv";
+dotenv.config();
+
+const MNEMONIC_PATH = "m/44'/60'/0'/0";
+const MNEMONIC = process.env.MNEMONIC ?? "";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -17,6 +22,17 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 100000, //Required for long zk proving times
+  },
+  networks: {
+    sepolia: {
+      url: "https://rpc.sepolia.org/",
+      chainId: 11155111,
+      accounts: {
+        mnemonic: MNEMONIC,
+        path: MNEMONIC_PATH,
+        initialIndex: 1,
+      },
+    },
   },
 };
 

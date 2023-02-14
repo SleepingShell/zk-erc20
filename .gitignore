@@ -6,3 +6,4 @@ artifacts/
 types/
 build/*
 INTERNAL.md
+.env

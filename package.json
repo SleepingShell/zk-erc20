@@ -21,7 +21,8 @@
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts",
     "prepare": "husky install",
     "githook:precommit": "npx pretty-quick --staged",
-    "test-circuit": "hardhat test test/circuit*"
+    "test-circuit": "hardhat test test/circuit*",
+    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy.ts"
   },
   "dependencies": {
     "@metamask/eth-sig-util": "^5.0.2",
@@ -32,6 +33,7 @@
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "crypto": "^1.0.1",
+    "dotenv": "^16.0.3",
     "ffjavascript": "^0.2.57",
     "hardhat": "^2.10.1",
     "snarkjs": "^0.4.22"
