@@ -22,7 +22,8 @@
     "prepare": "husky install",
     "githook:precommit": "npx pretty-quick --staged",
     "test-circuit": "hardhat test test/circuit*",
-    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy.ts"
+    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy.ts",
+    "deploy:mock": "hardhat --network sepolia deployMock"
   },
   "dependencies": {
     "@metamask/eth-sig-util": "^5.0.2",
@@ -51,6 +52,7 @@
     "@types/jest": "^28.1.6",
     "chai": "^4.3.6",
     "ethers": "^5.6.9",
+    "hardhat-abi-exporter": "^2.10.1",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-tracer": "^1.2.1",
     "husky": "^8.0.0",

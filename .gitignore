@@ -7,3 +7,4 @@ types/
 build/*
 INTERNAL.md
 .env
+.abi/
