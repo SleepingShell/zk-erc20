@@ -1,8 +1,12 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-tracer";
+import "hardhat-abi-exporter";
 import dotenv from "dotenv";
 dotenv.config();
+
+import "./scripts/addToken";
+import "./scripts/deployMockToken";
 
 const MNEMONIC_PATH = "m/44'/60'/0'/0";
 const MNEMONIC = process.env.MNEMONIC ?? "";
@@ -33,6 +37,15 @@ const config: HardhatUserConfig = {
         initialIndex: 1,
       },
     },
+  },
+
+  abiExporter: {
+    path: "./abi",
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    pretty: true,
+    only: ["MockERC20", "zkERC20"],
   },
 };
 

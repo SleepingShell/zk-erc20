@@ -81,6 +81,21 @@ A user deposits by creating a transaction with 0-value commitments.
   - Note the limitation in the earlier section still applies. Users would have to generate proofs with the latest data
 - Aggregation of proof using something like [Maze](https://github.com/privacy-scaling-explorations/maze)
 
+# Sepolia
+
+DepositVerifier: 0xd8E5B2fa778e51662D007f380D933A6BE806D936
+Transaction1x1Verifier: 0x426F97e039bb5752e4aa338deF22f7bbDeec05C3
+Transaction1x2Verifier: 0xB373A47131aF254a35EF7609534150902f9ef46F
+Transaction2x2Verifier: 0xea7ABd105bA9ded81aA395f79FaC1C7F2A93098B
+zkERC20: 0x6335e0683545c4342A61d60d7c88776c90E3F95b
+
+MockToken1: 0x8825aDeD4cd69290Aa6E730FD0E9F9747054E84F
+
+```
+npx hardhat --network sepolia deployMock
+npx hardhat --network sepolia addToken --zkerc20 0x6335e0683545c4342A61d60d7c88776c90E3F95b --token 0x8825aDeD4cd69290Aa6E730FD0E9F9747054E84F
+```
+
 #### Random notes
 
 - If you get "\*.zkey: Missing section 1" on running `shield compile` then the ptau ceremony is probably too small for the circuit
