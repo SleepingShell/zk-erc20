@@ -1,1 +1,1 @@
-export * as zkutil from "./util/account";
+export * as zkutil from "./util";
