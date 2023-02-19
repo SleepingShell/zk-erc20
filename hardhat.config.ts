@@ -44,7 +44,7 @@ const config: HardhatUserConfig = {
     runOnCompile: true,
     clear: true,
     flat: true,
-    pretty: true,
+    pretty: false,
     only: ["MockERC20", "zkERC20"],
   },
 };
