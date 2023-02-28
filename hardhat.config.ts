@@ -7,6 +7,7 @@ dotenv.config();
 
 import "./scripts/addToken";
 import "./scripts/deployMockToken";
+import "./scripts/depositToken";
 
 const MNEMONIC_PATH = "m/44'/60'/0'/0";
 const MNEMONIC = process.env.MNEMONIC ?? "";
